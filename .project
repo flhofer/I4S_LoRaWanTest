@@ -41,5 +41,20 @@
 			<type>2</type>
 			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/variants/mkrwan1300</locationURI>
 		</link>
+		<link>
+			<name>libraries/LoRa</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/LoRa/0.7.2</locationURI>
+		</link>
+		<link>
+			<name>libraries/MKRWAN</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/MKRWAN/1.0.12</locationURI>
+		</link>
+		<link>
+			<name>libraries/SPI</name>
+			<type>2</type>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/libraries/SPI</locationURI>
+		</link>
 	</linkedResources>
 </projectDescription>

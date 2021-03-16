@@ -1,10 +1,30 @@
 // Do not remove the include below
 #include "main.h"
+#include "LoRaMgmt.h"			// LoRaWan modem management
 
 #define UNCF_POLL	5			// How many times to poll
 #define TST_RETRY	5			// How many times retry to send message
 #define TST_MXRSLT	30			// What's the max number of test results we allow?
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
+
+/* Strings 		*/
+
+const char prtSttStart[] = "Start test\n";
+const char prtSttPoll[] = "Poll for answer\n";
+const char prtSttStop[] = "Stop test\n";
+const char prtSttRetry[] = "Retry\n";
+const char prtSttEvaluate[] = "Evaluate\n";
+const char prtSttAddMeas[] = " - add measurement\n";
+const char prtSttReset[] = "Reset\n";
+const char prtSttRestart[] = "Restart - Init\n";
+const char prtSttEnd[] = "End test\n";
+const char prtSttPollErr[] = "Poll - No response from server.\n";
+const char prtSttDone[] = "done\n";
+const char prtSttErrExec[] = "ERROR: during state execution\n";
+const char prtSttErrText[] = "ERROR: test malfunction\n";
+const char prtSttWrnConf[] = "WARN: Invalid test configuration\n";
+const char prtSttSelect[] = "Select Test:\n";
+const char prtSttResults[] = "Results:\n";
 
 /* Locals 		*/
 
@@ -109,6 +129,25 @@ void writeEEPromDefaults() { // for defaults
 
 }
 
+static void
+printTestResults(){
+	// use all local, do not change global
+	sLoRaResutls_t * trn = &testResults[0]; // Init results pointer
+
+	// for printing
+	char buf[128];
+
+	debugSerial.print(prtSttResults);
+	for (int i = 1; i<= TST_MXRSLT; i++, trn++){
+		sprintf(buf, "%c;%02d;%02d;%07lu;%07lu;0x%02X;%lu;%02u;%02d;%03d;%03d",
+				prntGrp, prntTno, i, trn->timeTx, trn->timeRx,
+				trn->chnMsk, trn->txFrq, trn->txDR, trn->txPwr,
+				trn->rxRssi, trn->rxSnr);
+		debugSerial.println(buf);
+	}
+}
+
+
 /*************** TEST MANAGEMENT FUNCTIONS*****************/
 
 static testParam_t ** tno = NULL;
@@ -128,7 +167,180 @@ enum testRun { 	rError = -1,
 			};
 
 static enum testRun tstate = rInit;
+static int	pollcnt;			// un-conf poll retries
+static int	retries; 			// un-conf send retries
 
+/*
+ * runTest: test runner
+ *
+ * Arguments: - pointer to test structure of actual test
+ *
+ * Return:	  - test run enumeration status
+ */
+static enum testRun
+runTest(testParam_t * testNow){
+
+	int failed = 0;
+
+	if (!testNow){
+		debugSerial.println(prtSttWrnConf);
+		return rError;
+	}
+
+	int ret = 0;
+	switch(tstate){
+
+	case rInit:
+
+		// reset status on next test
+		memset(testResults,0, sizeof(testResults));
+		trn = &testResults[0];	// Init results pointer
+
+		// Set global test parameters
+//		LoRaSetGblParam(confirmed, dataLen);
+
+		// Setup channels as configured
+
+		if ((LoRaSetChannels(testNow->chnEnabled, testNow->drMin, testNow->drMax)) // set channels
+			|| (LoRaMgmtTxPwr(testNow->txPowerIdx))) { // set power index;
+			tstate = rError;
+			break; // TODO: error
+		}
+
+		tstate = rStart;
+		debugSerial.print(prtSttStart);
+		// fall-through
+		// @suppress("No break at end of case")
+
+	case rStart:
+
+		if ((ret = LoRaMgmtSend()) && ret != 1){
+			if (-9 == ret) // no chn -> pause for free-delay / active channels
+				delay(RESFREEDEL/actChan);
+			else
+				delay(100); // simple retry timer 100ms, e.g. busy
+			break;
+		}
+
+		// sent but no response from confirmed, or not confirmed msg, goto poll
+		if (ret == 1 || !confirmed){
+			tstate = rRun;
+			debugSerial.print(prtSttPoll);
+		}
+		else {
+			tstate = rStop;
+			debugSerial.print(prtSttStop);
+			break;
+		}
+		// fall-through
+		// @suppress("No break at end of case")
+
+	case rRun:
+
+		if ((ret = LoRaMgmtPoll()) && (confirmed || (pollcnt < UNCF_POLL))){
+			if (-9 == ret) // no chn -> pause for free-delay / active channels
+				delay(RESFREEDEL/actChan);
+			else if (1 == ret)
+				pollcnt++;
+			else
+				delay(100); // simple retry timer 100ms, e.g. busy
+			break;
+		}
+
+		// Unconf polling ended and still no response, or confirmed and error message (end of retries)
+		if ((failed = (0 != ret)))
+			debugSerial.print( prtSttPollErr);
+
+		tstate = rStop;
+		debugSerial.print(prtSttStop);
+		// fall-through
+		// @suppress("No break at end of case")
+
+	case rStop:
+
+		// unsuccessful and retries left?
+		if (failed && (TST_RETRY > retries)){
+			tstate = rStart;
+			debugSerial.print(prtSttRetry);
+			delay(RESFREEDEL/actChan); // delay for modem resource free
+			(void)LoRaMgmtUpdt();
+			break;
+		}
+
+		tstate = rEvaluate;
+		debugSerial.print(prtSttEvaluate);
+		// fall-through
+		// @suppress("No break at end of case")
+
+	case rEvaluate:
+		debugSerial.print(prtSttAddMeas);
+
+		(void)LoRaMgmtGetResults(trn); // TODO: implement and use return value
+		// pgm_read_word = read char pointer address from PROGMEM pos PRTTBLCR of the string array
+		// strcpy_P = copy char[] from PRROGMEM at that address of PRROGMEM to buf
+		// *.print = print that char to serial
+//		printPrgMem(PRTTBLTBL,PRTTBLCR);
+//		debugSerial.print(trn->lastCR);
+//		printPrgMem(PRTTBLTBL,PRTTBLDR);
+//		debugSerial.print(trn->txDR);
+//		printPrgMem(PRTTBLTBL,PRTTBLCHMSK);
+//		debugSerial.println(trn->chnMsk);
+//		printPrgMem(PRTTBLTBL,PRTTBLFRQ);
+//		debugSerial.print(trn->txFrq);
+//		printPrgMem(PRTTBLTBL,PRTTBLPWR);
+//		debugSerial.print(trn->txPwr);
+//		printPrgMem(PRTTBLTBL,PRTTBLRSSI);
+//		debugSerial.print(trn->rxRssi);
+//		printPrgMem(PRTTBLTBL,PRTTBLSNR);
+//		debugSerial.println(trn->rxSnr);
+//
+//		printPrgMem(PRTTBLTBL,PRTTBLTTX);
+//		printScaled(trn->timeTx);
+//		printPrgMem(PRTTBLTBL,PRTTBLTMS);
+//		printPrgMem(PRTTBLTBL,PRTTBLTRX);
+//		printScaled(trn->timeRx);
+//		printPrgMem(PRTTBLTBL,PRTTBLTMS);
+//		printPrgMem(PRTTBLTBL,PRTTBLTTL);
+//		printScaled(trn->timeToRx);
+//		printPrgMem(PRTTBLTBL,PRTTBLTMS);
+		debugSerial.println();
+
+		// End of tests?
+		if (trn >= &testResults[TST_MXRSLT-1]){
+			debugSerial.print(prtSttEnd);
+			printTestResults();
+			tstate = rEnd;
+			break;
+		}
+
+		trn++;
+		tstate = rReset;
+		debugSerial.print(prtSttReset);
+
+		// fall-through
+		// @suppress("No break at end of case")
+
+	case rReset:
+		debugSerial.print(prtSttRestart);
+		tstate = rStart;
+		break;
+
+	default:
+	case rEnd:
+		if (!testend){
+			debugSerial.print(prtSttDone);
+			debugSerial.print(prtSttSelect);
+		}
+		testend = 1;
+	}
+
+	if (-1 == ret && (rStart != tstate) && (rRun != tstate) ){
+		debugSerial.print(prtSttErrExec);
+		tstate = rEnd;
+	}
+
+	return tstate;
+}
 void readInput() {
 
 	signed char A;
@@ -211,6 +423,15 @@ void readInput() {
 
 }
 
+void initVariant () {
+
+	PORT->Group[0].PINCFG[15].reg = PORT_PINCFG_INEN | PORT_PINCFG_PULLEN; // Input and Pullup, Port A, pin 15
+	REG_PORT_OUTSET0 = PORT_PA15; // PULL-UP resistor rather than pull-down
+
+	REG_PORT_DIRSET0 = PORT_PA20; // Set led to output
+}
+
+
 //The setup function is called once at startup of the sketch
 void setup()
 {
@@ -227,11 +448,10 @@ void setup()
 		debug = ((waitSE));	// reset debug flag if time is elapsed
 	}
 
-	// Blink once PIN13 to show program start
-//	PORTC |= (0x01 << PINC7);
-//	delay (500);
-//	PORTC &= ~(0x01 << PINC7);
-
+	// Blink once PIN20 to show program start
+	REG_PORT_OUTSET0 = PORT_PA20;
+	delay(500);
+	REG_PORT_OUTCLR0 = PORT_PA20;
 //	LoRaMgmtSetup();
 
 	tgrp = &testConfig[0]; 	// assign pointer to pointer to TestgroupA
@@ -240,7 +460,7 @@ void setup()
 
 	startTs = millis();		// snapshot starting time
 
-//	printPrgMem(PRTSTTTBL, PRTSTTSELECT);
+	debugSerial.print(prtSttSelect);
 }
 
 
@@ -250,11 +470,10 @@ void loop()
 	if (testend)
 		readInput();
 	else{
-//		if (*tno)
-//			runTest(*tno);
-//		else
-//			printPrgMem(PRTSTTTBL, PRTSTTERRTEXT);
-		testend=0;
+		if (*tno)
+			runTest(*tno);
+		else
+			debugSerial.print(prtSttErrText);
 	}
 	// received something
 	// debugSerial.read();
