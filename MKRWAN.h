@@ -719,6 +719,10 @@ public:
     return fcd;
   }
 
+  bool setChannelMask(int32_t mask) {
+    sendAT(GF("+CHANMASK="), mask);
+    return (waitResponse("+OK=") != 1);
+  }
 
 private:
 
