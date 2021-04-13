@@ -102,8 +102,12 @@ int LoRaMgmtPoll(){
 static int
 LoRaGetChannels(uint16_t * chnMsk){
 
-	return modem.getChannelMask();
+	*chnMsk = 0;
 
+	for (int i=0; i<LORACHNMAX; i++)
+	  *chnMsk |= (uint16_t)modem.isChannelEnabled((uint8_t)i) << i;
+
+	return (0 == *chnMsk) * -1; // error if mask is empty!
 }
 
 /*
@@ -167,7 +171,6 @@ void LoRaMgmtSetupDumb(long FRQ){
 	Serial.println("Starting LoRa failed!");
 	while (1);
 	}
-
 }
 
 /*
@@ -199,6 +202,17 @@ void LoRaSetGblParam(bool confirm, int datalen){
  */
 int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax){
 
+	bool retVal = true;
+
+	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1)
+		if ((bool)chnMsk & 0x01) {
+			retVal &= modem.enableChannel((uint8_t)i);
+			retVal &= modem.dataRate(drMin);
+		}
+		else
+			retVal &= modem.disableChannel((uint8_t)i);
+
+	return !retVal * -1;
 }
 
 /*
@@ -209,7 +223,10 @@ int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax){
  * Return:	  - return 0 if OK, -1 if error
  */
 int LoRaMgmtUpdt(){
+	// Prepare PayLoad of x bytes
+	(void)generatePayload(genbuf);
 
+	return 0;
 }
 
 /*
@@ -220,7 +237,9 @@ int LoRaMgmtUpdt(){
  * Return:	  - return 0 if OK, -1 if error
  */
 int LoRaMgmtRcnf(){
-
+	if (conf)
+		return modem.restart() ? 0 : -1;\
+	return 0;
 }
 
 /*
@@ -231,7 +250,7 @@ int LoRaMgmtRcnf(){
  * Return:	  - return 0 if OK, -1 if error
  */
 int LoRaMgmtTxPwr(uint8_t txPwr){
-
+	return modem.power(RFO, txPwr) ? 0 : -1;
 }
 
 
