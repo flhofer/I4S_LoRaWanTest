@@ -21,8 +21,7 @@ static const char *appSKey = LORA_APSKEY;
 
 static bool conf = false;			// use confirmed messages
 static int dataLen = 1; 			// TX data length for tests
-static unsigned long rnd_contex;	// pseudo-random generator context (for reentrant)
-
+static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
@@ -37,11 +36,9 @@ static byte genbuf[MAXLORALEN];			// buffer for generated message
  */
 static byte *
 generatePayload(byte *payload){
-
-	payload[MAXLORALEN-1]= '\0';
 	// TODO: unprotected memory
-	for (int i=0; i < min(dataLen, MAXLORALEN); i++, payload++)
-		*payload=(byte)(random_r(&rnd_contex) % 255);
+	for (int i=0; i < dataLen; i++, payload++)
+		*payload=(byte)(rand_r(&rnd_contex) % 255);
 
 	return payload;
 }
@@ -182,7 +179,15 @@ void LoRaMgmtSetupDumb(long FRQ){
  * Return:	  -
  */
 void LoRaSetGblParam(bool confirm, int datalen){
+	conf = confirm;
+	// set boundaries for len value
+	dataLen = max(min(datalen, MAXLORALEN), 1);
 
+	// initialize random seed with datalen as value
+	// keep consistency among tests, but differs with diff len
+	rnd_contex = dataLen;
+	// Prepare PayLoad of x bytes
+	(void)generatePayload(genbuf);
 }
 
 /*
