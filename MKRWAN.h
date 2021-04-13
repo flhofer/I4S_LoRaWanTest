@@ -1,25 +1,34 @@
 /*
-  This file is part of the MKR WAN library.
+  This file is part of the MKRWAN library.
   Copyright (C) 2017  Arduino AG (http://www.arduino.cc/)
 
   Based on the TinyGSM library https://github.com/vshymanskyy/TinyGSM
   Copyright (c) 2016 Volodymyr Shymanskyy
 
-  MKR WAN library is free software: you can redistribute it and/or modify
+  MKRWAN library is free software: you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  MKR WAN library is distributed in the hope that it will be useful,
+  MKRWAN library is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU Lesser General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with MKR WAN library.  If not, see <http://www.gnu.org/licenses/>.
+  along with MKRWAN library.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "Arduino.h"
+
+#ifdef PORTENTA_CARRIER
+#undef LORA_RESET
+#define LORA_RESET (PD_5)
+#undef LORA_BOOT0
+#define LORA_BOOT0 (PJ_11)
+#endif
+
+#define DEFAULT_JOIN_TIMEOUT 60000L
 
 template <class T, unsigned N>
 class SerialFifo
@@ -163,7 +172,7 @@ private:
 };
 
 #ifndef YIELD
-  #define YIELD() { delay(0); }
+  #define YIELD() { delay(2); }
 #endif
 
 typedef const char* ConstStr;
@@ -214,12 +223,15 @@ static const char LORA_ERROR_NO_NETWORK[] = "+ERR_NO_NETWORK\r";
 static const char LORA_ERROR_RX[] = "+ERR_RX\r";
 static const char LORA_ERROR_UNKNOWN[] = "+ERR_UNKNOWN\r";
 
-static const char ARDUINO_FW_VERSION[] = "ARD-078 1.1.9";
+static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.1";
 static const char ARDUINO_FW_IDENTIFIER[] = "ARD-078";
 
 typedef enum {
     AS923 = 0,
     AU915,
+    CN470,
+    CN779,
+    EU433,
     EU868 = 5,
     KR920,
     IN865,
@@ -276,9 +288,13 @@ private:
   String        fw_version;
   unsigned long lastPollTime;
   unsigned long pollInterval;
+  int           mask_size;
+  uint16_t      channelsMask[6];
+  String        channel_mask_str;
+  _lora_band    region;
 
 public:
-  virtual int joinOTAA(const char *appEui, const char *appKey, const char *devEui = NULL) {
+  virtual int joinOTAA(const char *appEui, const char *appKey, const char *devEui, uint32_t timeout) {
     YIELD();
     rx.clear();
     changeMode(OTAA);
@@ -287,20 +303,20 @@ public:
     if (devEui != NULL) {
         set(DEV_EUI, devEui);
     }
-    network_joined = join();
+    network_joined = join(timeout);
     delay(1000);
     return network_joined;
   }
 
-  virtual int joinOTAA(String appEui, String appKey) {
-    return joinOTAA(appEui.c_str(), appKey.c_str(), NULL);
+  virtual int joinOTAA(String appEui, String appKey, uint32_t timeout = DEFAULT_JOIN_TIMEOUT) {
+    return joinOTAA(appEui.c_str(), appKey.c_str(), NULL, timeout);
   }
 
-  virtual int joinOTAA(String appEui, String appKey, String devEui) {
-    return joinOTAA(appEui.c_str(), appKey.c_str(), devEui.c_str());
+  virtual int joinOTAA(String appEui, String appKey, String devEui, uint32_t timeout = DEFAULT_JOIN_TIMEOUT) {
+    return joinOTAA(appEui.c_str(), appKey.c_str(), devEui.c_str(), timeout);
   }
 
-  virtual int joinABP(/*const char* nwkId, */const char * devAddr, const char * nwkSKey, const char * appSKey) {
+  virtual int joinABP(/*const char* nwkId, */const char * devAddr, const char * nwkSKey, const char * appSKey, uint32_t timeout = DEFAULT_JOIN_TIMEOUT) {
     YIELD();
     rx.clear();
     changeMode(ABP);
@@ -308,7 +324,7 @@ public:
     set(DEV_ADDR, devAddr);
     set(NWKS_KEY, nwkSKey);
     set(APPS_KEY, appSKey);
-    network_joined = join();
+    network_joined = join(timeout);
     return (getJoinStatus() == 1);
   }
 
@@ -408,9 +424,9 @@ public:
   /*
    * Basic functions
    */
-  bool begin(_lora_band band) {
+  bool begin(_lora_band band, uint32_t baud = 19200, uint16_t config = SERIAL_8N2) {
 #ifdef SerialLoRa
-    SerialLoRa.begin(19200);
+    SerialLoRa.begin(baud, config);
     pinMode(LORA_BOOT0, OUTPUT);
     digitalWrite(LORA_BOOT0, LOW);
     pinMode(LORA_RESET, OUTPUT);
@@ -419,9 +435,13 @@ public:
     digitalWrite(LORA_RESET, LOW);
     delay(200);
     digitalWrite(LORA_RESET, HIGH);
+    delay(200);
 #endif
+    region = band;
     if (init()) {
         return configureBand(band);
+    } else {
+      return begin(band, baud, SERIAL_8N1);
     }
     return false;
   }
@@ -432,6 +452,9 @@ public:
     }
     // populate version field on startup
     version();
+    if (!isLatestFW()) {
+      DBG("Please update fw using MKRWANFWUpdate_standalone.ino sketch");
+    }
     return true;
   }
 
@@ -451,6 +474,131 @@ public:
     if (band == EU868 && isArduinoFW()) {
         return dutyCycle(true);
     }
+    return true;
+  }
+
+  int getChannelMaskSize(_lora_band band) {
+    switch (band)
+    {
+      case AS923:
+      case CN779:
+      case EU433:
+      case EU868:
+      case KR920:
+      case IN865:
+        mask_size = 1;
+        break;
+      case AU915:
+      case CN470:
+      case US915:
+      case US915_HYBRID:
+        mask_size = 6;
+        break;
+      default:
+        break;
+    }
+    return mask_size;
+  }
+
+  String getChannelMask() {
+    int size = 4*getChannelMaskSize(region);
+    sendAT(GF("+CHANMASK?"));
+    if (waitResponse("+OK=") == 1) {
+        channel_mask_str = stream.readStringUntil('\r');
+        DBG("Full channel mask string: ", channel_mask_str);
+        sscanf(channel_mask_str.c_str(), "%04hx%04hx%04hx%04hx%04hx%04hx", &channelsMask[0], &channelsMask[1], &channelsMask[2],
+                                                    &channelsMask[3], &channelsMask[4], &channelsMask[5]);
+
+        return channel_mask_str.substring(0, size);
+    }
+    String str = "0";
+    return str;
+  }
+
+  int isChannelEnabled(int pos) {
+    //Populate channelsMask array
+    int max_retry = 3;
+    int retry = 0;
+    while (retry < max_retry) {
+      String mask = getChannelMask();
+      if (mask != "0") {
+        break;
+      }
+      retry++;
+    }
+
+    int row = pos / 16;
+    int col = pos % 16;
+    uint16_t channel = (uint16_t)(1 << col);
+
+    channel = ((channelsMask[row] & channel) >> col);
+
+    return channel;
+  }
+
+  bool disableChannel(int pos) {
+    //Populate channelsMask array
+    int max_retry = 3;
+    int retry = 0;
+    while (retry < max_retry) {
+      String mask = getChannelMask();
+      if (mask != "0") {
+        break;
+      }
+      retry++;
+    }
+
+    int row = pos / 16;
+    int col = pos % 16;
+    uint16_t mask = ~(uint16_t)(1 << col);
+
+    channelsMask[row] = channelsMask[row] & mask;
+
+    return sendMask();
+  }
+
+  bool enableChannel(int pos) {
+    //Populate channelsMask array
+    int max_retry = 3;
+    int retry = 0;
+    while (retry < max_retry) {
+      String mask = getChannelMask();
+      if (mask != "0") {
+        break;
+      }
+      retry++;
+    }
+
+    int row = pos / 16;
+    int col = pos % 16;
+    uint16_t mask = (uint16_t)(1 << col);
+
+    channelsMask[row] = channelsMask[row] | mask;
+
+    return sendMask();
+  }
+
+  bool sendMask() {
+    String newMask;
+
+    /* Convert channel mask into string */
+    for (int i = 0; i < 6; i++) {
+      char hex[4];
+      sprintf(hex, "%04x", channelsMask[i]);
+      newMask.concat(hex);
+    }
+
+    DBG("Newmask: ", newMask);
+
+    return sendMask(newMask);
+  }
+
+  bool sendMask(String newMask) {
+    sendAT(GF("+CHANMASK="), newMask);
+    if (waitResponse() != 1) {
+        return false;
+    }
+
     return true;
   }
 
@@ -676,6 +824,40 @@ public:
     return appskey;
   }
 
+  int getRX2DR() {
+    int dr = -1;
+    sendAT(GF("+RX2DR?"));
+    if (waitResponse("+OK=") == 1) {
+        dr = stream.readStringUntil('\r').toInt();
+    }
+    return dr;
+  }
+
+  bool setRX2DR(uint8_t dr) {
+    sendAT(GF("+RX2DR="),dr);
+    if (waitResponse() != 1) {
+      return false;
+    }
+    return true;
+  }
+
+  uint32_t getRX2Freq() {
+    int freq = -1;
+    sendAT(GF("+RX2FQ?"));
+    if (waitResponse("+OK=") == 1) {
+        freq = stream.readStringUntil('\r').toInt();
+    }
+    return freq;
+  }
+
+  bool setRX2Freq(uint32_t freq) {
+    sendAT(GF("+RX2FQ="),freq);
+    if (waitResponse() != 1) {
+      return false;
+    }
+    return true;
+  }
+
   bool setFCU(uint16_t fcu) {
     sendAT(GF("+FCU="), fcu);
     if (waitResponse() != 1) {
@@ -710,24 +892,15 @@ public:
     return fcd;
   }
 
-  int32_t getChannelMask() {
-    int32_t fcd = -1;
-    sendAT(GF("+CHANMASK?"));
-    if (waitResponse("+OK=") == 1) {
-        fcd = stream.readStringUntil('\r').toInt();
-    }
-    return fcd;
-  }
-
-  bool setChannelMask(int32_t mask) {
-    sendAT(GF("+CHANMASK="), mask);
-    return (waitResponse("+OK=") != 1);
-  }
 
 private:
 
   bool isArduinoFW() {
     return (fw_version.indexOf(ARDUINO_FW_IDENTIFIER) >= 0);
+  }
+
+  bool isLatestFW() {
+    return (fw_version == ARDUINO_FW_VERSION);
   }
 
   bool changeMode(_lora_mode mode) {
@@ -738,9 +911,10 @@ private:
     return true;
   }
 
-  bool join() {
+  bool join(uint32_t timeout) {
     sendAT(GF("+JOIN"));
-    if (waitResponse(60000L, "+EVENT=1,1") != 1) {
+    sendAT();
+    if (waitResponse(timeout, "+EVENT=1,1") != 1) {
       return false;
     }
     return true;
@@ -781,8 +955,8 @@ private:
   /**
    * @brief transmit uplink
    * 
-   * @param buff data to transmit`
-   * @param len length of the buffer`
+   * @param buff data to transmit
+   * @param len length of the buffer
    * @param confirmed true = transmit confirmed uplink
    * @return int a positive number indicate success and is the number of bytes transmitted
    *             -1 indicates a timeout error
@@ -870,7 +1044,7 @@ private:
     streamWrite("AT", cmd..., LORA_NL);
     stream.flush();
     YIELD();
-    //DBG("### AT:", cmd...);
+    DBG("### AT:", cmd...);
   }
 
   // TODO: Optimize this!
@@ -973,6 +1147,3 @@ finish:
   }
 
 };
-
-//Added by Sloeber 
-#pragma once
