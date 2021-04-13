@@ -8,7 +8,7 @@
 #include "LoRaMgmt.h"
 
 #include "main.h"				// Global includes/definitions, i.e. address, key, debug mode
-#include <MKRWAN.h>
+#include "MKRWAN.h"
 #include <LoRa.h>
 //#include <stdlib.h>				// ARM standard library
 
@@ -19,30 +19,78 @@ static const char *devAddr = LORA_DEVADDR;
 static const char *nwkSKey = LORA_NWSKEY;
 static const char *appSKey = LORA_APSKEY;
 
+static bool conf = false;			// use confirmed messages
+static int dataLen = 1; 			// TX data length for tests
+static unsigned long rnd_contex;	// pseudo-random generator context (for reentrant)
+
+
+static byte genbuf[MAXLORALEN];			// buffer for generated message
+
+/********************** HELPERS ************************/
+
 /*
- * LoRaMgmtSendConf: send a confirmed message. If no response arrives
- * 		within timeout, return 1 (busy)
+ * generatePayload: fills a buffer with dataLen random bytes
  *
- * Arguments: -
+ * Arguments: - Byte vector for payload
  *
- * Return:	  status of polling, 0 ok, -1 error, 1 busy
+ * Return:	  - next open position (end of buffer)
  */
-int LoRaMgmtSend(){
-	  modem.beginPacket();
-	  modem.print(msg);
-	  err = modem.endPacket(true);
+static byte *
+generatePayload(byte *payload){
+
+	payload[MAXLORALEN-1]= '\0';
+	// TODO: unprotected memory
+	for (int i=0; i < min(dataLen, MAXLORALEN); i++, payload++)
+		*payload=(byte)(random_r(&rnd_contex) % 255);
+
+	return payload;
 }
 
+/*************** TEST SEND FUNCTIONS ********************/
+
+
 /*
- * LoRaMgmtPoll: poll function for confirmed and delayed TX
+ * LoRaMgmtSendConf: send a message with the defined mode
  *
  * Arguments: -
  *
- * Return:	  status of polling, 0 ok, -1 error, 1 busy
+ * Return:	  status of sending, >0 ok (no of bytes), <0 error
+ */
+int LoRaMgmtSend(){
+	modem.beginPacket();
+	modem.write(genbuf, dataLen);
+	return modem.endPacket(conf);
+}
+
+
+// TODO: check for POLL = send ok, ack signal? How does that work?
+/*
+ * LoRaMgmtPoll: poll function for confirmed and delayed TX, check Receive
+ *
+ * Arguments: -
+ *
+ * Return:	  status of polling, 0 no message, -1 error, >0 No of bytes
  */
 int LoRaMgmtPoll(){
+	delay(1000);
+	if (!modem.available()) {
+		// No downlink message received at this time.
+		return 0;
+	}
+	char rcv[MAXLORALEN];
+	unsigned int i = 0;
+	while (modem.available() && i < MAXLORALEN) {
+		rcv[i++] = (char)modem.read();
+	}
+	debugSerial.print("Received: ");
+	for (unsigned int j = 0; j < i; j++) {
+		debugSerial.print(rcv[j] >> 4, HEX);
+		debugSerial.print(rcv[j] & 0xF, HEX);
+		debugSerial.print(" ");
+	}
+	debugSerial.println();
 
-
+	return i;
 }
 
 /*************** MANAGEMENT FUNCTIONS ********************/
@@ -57,7 +105,7 @@ int LoRaMgmtPoll(){
 static int
 LoRaGetChannels(uint16_t * chnMsk){
 
-
+	return modem.getChannelMask();
 
 }
 
@@ -87,14 +135,17 @@ void LoRaMgmtSetup(){
 		while (1) {}
 	};
 
+	modem.dutyCycle(false); // switch off
+
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
 	debugSerial.print("Your device EUI is: ");
 	debugSerial.println(modem.deviceEUI());
 
+	debugSerial.println("-- PERSONALIZE");
 	int connected = modem.joinABP(devAddr, nwkSKey, appSKey);
 	if (!connected) {
-		debugSerial.println("Something went wrong; are you indoor? Move near a window and retry");
+		// Something went wrong; are you indoor? Move near a window and retry
 		while (1) {}
 	}
 

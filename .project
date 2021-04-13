@@ -34,27 +34,22 @@
 		<link>
 			<name>core/core</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/cores/arduino</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.11/cores/arduino</locationURI>
 		</link>
 		<link>
 			<name>core/variant</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/variants/mkrwan1300</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.11/variants/mkrwan1300</locationURI>
 		</link>
 		<link>
 			<name>libraries/LoRa</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/LoRa/0.7.2</locationURI>
-		</link>
-		<link>
-			<name>libraries/MKRWAN</name>
-			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/MKRWAN/1.0.12</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/libraries/LoRa/0.8.0</locationURI>
 		</link>
 		<link>
 			<name>libraries/SPI</name>
 			<type>2</type>
-			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/libraries/SPI</locationURI>
+			<locationURI>ECLIPSE_HOME/arduinoPlugin/packages/arduino/hardware/samd/1.8.11/libraries/SPI</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>
