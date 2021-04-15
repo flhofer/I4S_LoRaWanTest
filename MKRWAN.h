@@ -583,7 +583,7 @@ public:
 
     /* Convert channel mask into string */
     for (int i = 0; i < 6; i++) {
-      char hex[4];
+      char hex[5];
       sprintf(hex, "%04x", channelsMask[i]);
       newMask.concat(hex);
     }
@@ -687,6 +687,15 @@ public:
         String resp = stream.readStringUntil('\r');
     }
     return true;
+  }
+
+  int32_t getPower() {
+    int32_t fcd = -1;
+    sendAT(GF("+RFPOWER?"));
+    if (waitResponse("+OK=") == 1) {
+        fcd = stream.readStringUntil('\r').toInt();
+    }
+    return fcd;
   }
 
 #ifdef SerialLoRa
@@ -892,6 +901,23 @@ public:
     return fcd;
   }
 
+  int32_t getRSSI() {
+    int32_t fcd = -1;
+    sendAT(GF("+RSSI?"));
+    if (waitResponse("+OK=") == 1) {
+        fcd = stream.readStringUntil('\r').toInt();
+    }
+    return fcd;
+  }
+
+  int32_t getSNR() {
+    int32_t fcd = -1;
+    sendAT(GF("+SNR?"));
+    if (waitResponse("+OK=") == 1) {
+        fcd = stream.readStringUntil('\r').toInt();
+    }
+    return fcd;
+  }
 
 private:
 
