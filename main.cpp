@@ -26,6 +26,18 @@ const char prtSttWrnConf[] = "WARN: Invalid test configuration\n";
 const char prtSttSelect[] = "Select Test:\n";
 const char prtSttResults[] = "Results:\n";
 
+const char prtTblCR[] PROGMEM = " CR 4/";
+const char prtTblDR[] PROGMEM = " DR ";
+const char prtTblChnMsk[] PROGMEM = " MSK [EN] ";
+const char prtTblFrq[] PROGMEM = " Freq [hz] ";
+const char prtTblPwr[] PROGMEM = " pwr [dBm] ";
+const char prtTblRssi[] PROGMEM = " rssi ";
+const char prtTblSnr[] PROGMEM = " snr ";
+const char prtTblTTx[] PROGMEM = " Time TX: ";
+const char prtTblTRx[] PROGMEM = " Time RX: ";
+const char prtTblTTl[] PROGMEM = " Time Total: ";
+const char prtTblTms[] PROGMEM = " ms";
+
 /* Locals 		*/
 
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
@@ -39,6 +51,8 @@ static uint8_t dataLenMin = 1;					// Min data length to send over LoRa
 static uint8_t dataLenMax = 255;				// Max data length to send over LoRa
 static uint8_t txPowerTst = 4;					// txPower setting for the low power test
 static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
+static long Frequency;							// Frequency of dumb lora mode
+
 
 static uint8_t testGrp = 1;						// Running variables number
 static uint8_t testNo = 1;						// "	"	number
@@ -49,10 +63,10 @@ int debug = 1;
 
 // Test data structure
 typedef struct _testParam{
-	uint16_t chnEnabled;	// Channels enabled for this test
+	uint16_t chnEnabled;	// Channels enabled for this test, OR 0.1 MHz res of dumb channel
 	uint8_t txPowerIdx;		// Initial TX power index
-	uint8_t drMax;			// data rate Maximum for the test
-	uint8_t drMin;			// data rate Minimum for the test
+	uint8_t dr;				// data rate starting value
+	uint8_t Mode;			// mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
 	// RX1 Window
 	// RX1 delay
 	// RX1 DR offset
@@ -121,12 +135,18 @@ static testParam_t **testConfig[] = { // array of testParam_t**
 
 /*************** MIXED STUFF ********************/
 
-void readEEPromSettings () {
-
-}
-
-void writeEEPromDefaults() { // for defaults
-
+static void
+printScaled(uint32_t value, uint32_t Scale = 1000){
+	debugSerial.print(value / Scale);
+	debugSerial.print(".");
+	value %= Scale;
+	Scale /=10;
+	while (value < Scale){
+		debugSerial.print("0");
+		Scale /=10;
+	}
+	if (value != 0)
+		debugSerial.print(value);
 }
 
 static void
@@ -147,6 +167,28 @@ printTestResults(){
 	}
 }
 
+void readEEPromSettings () {
+
+}
+
+void writeEEPromDefaults() { // for defaults
+
+}
+
+uint16_t readSerialD(){
+	char A;
+	uint16_t retVal = 0;
+	while ((A = debugSerial.peek())
+			&& (A < 58 && A >= 48)){
+		if (log10((double)retVal) >= 4.0f ){
+			debugSerial.println("Error: too long value!");
+			break;
+		}
+		debugSerial.read();
+		retVal = retVal*10 + (int16_t)(A - 48);
+	}
+	return retVal;
+}
 
 /*************** TEST MANAGEMENT FUNCTIONS*****************/
 
@@ -197,11 +239,10 @@ runTest(testParam_t * testNow){
 		trn = &testResults[0];	// Init results pointer
 
 		// Set global test parameters
-//		LoRaSetGblParam(confirmed, dataLen);
+		LoRaSetGblParam(confirmed, dataLen);
 
 		// Setup channels as configured
-
-		if ((LoRaSetChannels(testNow->chnEnabled, testNow->drMin, testNow->drMax)) // set channels
+		if ((LoRaSetChannels(testNow->chnEnabled, testNow->dr, testNow->Mode)) // set channels
 			|| (LoRaMgmtTxPwr(testNow->txPowerIdx))) { // set power index;
 			tstate = rError;
 			break; // TODO: error
@@ -279,30 +320,30 @@ runTest(testParam_t * testNow){
 		// pgm_read_word = read char pointer address from PROGMEM pos PRTTBLCR of the string array
 		// strcpy_P = copy char[] from PRROGMEM at that address of PRROGMEM to buf
 		// *.print = print that char to serial
-//		printPrgMem(PRTTBLTBL,PRTTBLCR);
-//		debugSerial.print(trn->lastCR);
-//		printPrgMem(PRTTBLTBL,PRTTBLDR);
-//		debugSerial.print(trn->txDR);
-//		printPrgMem(PRTTBLTBL,PRTTBLCHMSK);
-//		debugSerial.println(trn->chnMsk);
-//		printPrgMem(PRTTBLTBL,PRTTBLFRQ);
-//		debugSerial.print(trn->txFrq);
-//		printPrgMem(PRTTBLTBL,PRTTBLPWR);
-//		debugSerial.print(trn->txPwr);
-//		printPrgMem(PRTTBLTBL,PRTTBLRSSI);
-//		debugSerial.print(trn->rxRssi);
-//		printPrgMem(PRTTBLTBL,PRTTBLSNR);
-//		debugSerial.println(trn->rxSnr);
-//
-//		printPrgMem(PRTTBLTBL,PRTTBLTTX);
-//		printScaled(trn->timeTx);
-//		printPrgMem(PRTTBLTBL,PRTTBLTMS);
-//		printPrgMem(PRTTBLTBL,PRTTBLTRX);
-//		printScaled(trn->timeRx);
-//		printPrgMem(PRTTBLTBL,PRTTBLTMS);
-//		printPrgMem(PRTTBLTBL,PRTTBLTTL);
-//		printScaled(trn->timeToRx);
-//		printPrgMem(PRTTBLTBL,PRTTBLTMS);
+		debugSerial.print(prtTblCR);
+		debugSerial.print(trn->lastCR);
+		debugSerial.print(prtTblDR);
+		debugSerial.print(trn->txDR);
+		debugSerial.print(prtTblChnMsk);
+		debugSerial.println(trn->chnMsk);
+		debugSerial.print(prtTblFrq);
+		debugSerial.print(trn->txFrq);
+		debugSerial.print(prtTblPwr);
+		debugSerial.print(trn->txPwr);
+		debugSerial.print(prtTblRssi);
+		debugSerial.print(trn->rxRssi);
+		debugSerial.print(prtTblSnr);
+		debugSerial.println(trn->rxSnr);
+
+		debugSerial.print(prtTblTTx);
+		printScaled(trn->timeTx);
+		debugSerial.print(prtTblTms);
+		debugSerial.print(prtTblTRx);
+		printScaled(trn->timeRx);
+		debugSerial.print(prtTblTms);
+		debugSerial.print(prtTblTTl);
+		printScaled(trn->timeToRx);
+		debugSerial.print(prtTblTms);
 		debugSerial.println();
 
 		// End of tests?
@@ -341,14 +382,15 @@ runTest(testParam_t * testNow){
 
 	return tstate;
 }
+
 void readInput() {
 
 	signed char A;
 	while (debugSerial.available()){
 		A = debugSerial.read();
 		switch (A){
-		// read parameter, they come together
 
+		// read parameter, they come together
 		case 'G':
 		case 'g': // read test group
 			A = debugSerial.read();
@@ -359,10 +401,8 @@ void readInput() {
 
 		case 'T':
 		case 't': // read test number to go
-			A = debugSerial.read();
-			A = A - 48;
-			if (A < 10 && A >= 0)
-				testNo = A;
+			testNo = (uint8_t)readSerialD();
+			debugSerial.println(testNo);
 			break;
 
 		case 'U':
@@ -383,16 +423,17 @@ void readInput() {
 
 		case 'P':
 		case 'p': // read tx power index
-			A = debugSerial.read();
-			A = A - 48;
-			if (A < 10 && A >= 0){
-				txPowerTst = A;
-//				ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-//					eeprom_update_byte(&ee_txPowerTst, txPowerTst);
-//				}
-			}
+			txPowerTst = (uint8_t)readSerialD();
+			debugSerial.println(txPowerTst);
+//			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
+//				eeprom_update_byte(&ee_txPowerTst, txPowerTst);
+//			}
 			break;
-
+		case 'F':
+		case 'f':
+			Frequency = readSerialD();
+			debugSerial.println(Frequency);
+			break;
 		case 'R':
 		case 'r': // set to run
 			testend = false;
@@ -411,13 +452,11 @@ void readInput() {
 			startTs = millis();
 			tstate = rInit;
 			break;
-
 		case 'd':
 		case 'D': // reset to defaults
 			writeEEPromDefaults();
 			readEEPromSettings();
 			break;
-		// TODO: add data length menu
 		}
 	}
 
@@ -452,7 +491,7 @@ void setup()
 	REG_PORT_OUTSET0 = PORT_PA20;
 	delay(500);
 	REG_PORT_OUTCLR0 = PORT_PA20;
-//	LoRaMgmtSetup();
+	LoRaMgmtSetup();
 
 	tgrp = &testConfig[0]; 	// assign pointer to pointer to TestgroupA
 	tno = *tgrp; 			// assign pointer to pointer to test 1
@@ -461,6 +500,7 @@ void setup()
 	startTs = millis();		// snapshot starting time
 
 	debugSerial.print(prtSttSelect);
+	debugSerial.flush();
 }
 
 
