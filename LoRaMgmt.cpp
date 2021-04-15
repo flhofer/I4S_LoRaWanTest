@@ -36,7 +36,7 @@ static byte genbuf[MAXLORALEN];			// buffer for generated message
  */
 static byte *
 generatePayload(byte *payload){
-	// TODO: unprotected memory
+
 	for (int i=0; i < dataLen; i++, payload++)
 		*payload=(byte)(rand_r(&rnd_contex) % 255);
 
@@ -119,7 +119,17 @@ LoRaGetChannels(uint16_t * chnMsk){
  */
 int
 LoRaMgmtGetResults(sLoRaResutls_t * res){
-
+//	res->timeTx = timeTx;
+//	res->timeRx = timeRx;
+//	res->timeToRx = timeToRx;
+//	res->txFrq = ttn.getFrequency();
+	(void)LoRaGetChannels(&res->chnMsk);
+//	res->lastCR = ttn.getCR();
+	res->txDR = modem.getDataRate();
+	res->txPwr = modem.getPower();
+	res->rxRssi = modem.getRSSI();
+	res->rxSnr = modem.getSNR();
+	return 0;
 }
 
 /*
@@ -136,7 +146,8 @@ void LoRaMgmtSetup(){
 		while (1) {}
 	};
 
-	modem.dutyCycle(false); // switch off
+	modem.dutyCycle(false); // switch off the duty cycle
+	modem.setADR(true);		// enable ADR
 
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
@@ -152,6 +163,10 @@ void LoRaMgmtSetup(){
 
 	// Set poll interval to 60 secs.
 	modem.minPollInterval(60);
+
+	// set to LorIoT standard RX, DR
+	modem.setRX2Freq(869525000);
+	modem.setRX2DR(0);
 }
 
 /*
