@@ -11,8 +11,8 @@
 
 
 //end of add your includes here
-#define debugSerial Serial		// USB Serial
-#define loraSerial Serial1		// Hardware serial
+#define debugSerial SerialUSB		// USB Serial
+#define loraSerial SerialLoRa		// Hardware serial
 
 #define LORA_DEVADDR	"01234567"
 #define LORA_NWSKEY		"01234567890abcdef01234567890abcd"
@@ -35,9 +35,6 @@ typedef struct sLoRaResutls {
 
 //global variable declarations
 extern int debug;				// Global flag Debug console attached (PC)
-
-
-
 
 //Do not add code below this line
 #endif /* _LoRaWanTest_H_ */

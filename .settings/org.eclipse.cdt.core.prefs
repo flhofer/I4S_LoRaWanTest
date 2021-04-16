@@ -25,7 +25,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.BOARD/op
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.BOARD/value=SAMD_MKRWAN1300
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/cores/arduino
+environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11/cores/arduino
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.CORE/value=arduino
@@ -73,7 +73,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.USB_PROD
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.USB_PRODUCT/value="Arduino MKR WAN 1300"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/variants/mkrwan1300
+environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11/variants/mkrwan1300
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.BUILD.VARIANT/value=mkrwan1300
@@ -178,22 +178,43 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.SIZE.
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.SIZE.CMD/value=arm-none-eabi-size
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.ALL/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.ALL/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.ALL/value=-Wall -Wextra -Wno-expansion-to-defined
+environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.ALL/value=-Wall -Wextra
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.DEFAULT/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.DEFAULT/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.DEFAULT/value=
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.MORE/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.MORE/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.MORE/value=-Wall -Wno-expansion-to-defined
+environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.MORE/value=-Wall
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.NONE/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.NONE/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS.NONE/value=-w
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.COMPILER.WARNING_FLAGS/value=${A.COMPILER.WARNING_FLAGS.ALL}
-environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOL/delimiter=\:
-environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOL/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOL/value=gdb-openocd
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.EXECUTABLE/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.EXECUTABLE/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.EXECUTABLE/value=${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.elf
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.PATH/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.PATH/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.PATH/value=${A.RUNTIME.TOOLS.OPENOCD-0.10.0-ARDUINO7.PATH}/bin/openocd
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.SCRIPT/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.SCRIPT/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.SCRIPT/value=${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.SCRIPTS_DIR/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.SCRIPTS_DIR/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER.OPENOCD.SCRIPTS_DIR/value=${A.RUNTIME.TOOLS.OPENOCD-0.10.0-ARDUINO7.PATH}/share/openocd/scripts/
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.SERVER/value=openocd
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN.PATH/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN.PATH/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN.PATH/value=${A.RUNTIME.TOOLS.ARM-NONE-EABI-GCC-7-2017Q4.PATH}/bin/
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN.PREFIX/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN.PREFIX/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN.PREFIX/value=arm-none-eabi-
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN/delimiter=\:
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN/operation=replace
+environment/project/io.sloeber.core.toolChain.release.724714924/A.DEBUG.TOOLCHAIN/value=gcc
 environment/project/io.sloeber.core.toolChain.release.724714924/A.ESP8266.NETWORK.UPLOAD.TOOL/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.ESP8266.NETWORK.UPLOAD.TOOL/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.ESP8266.NETWORK.UPLOAD.TOOL/value=esp8266OTA
@@ -235,7 +256,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.COMBI
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.COMBINE.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.C.ELF.CMD}"  "-L${A.BUILD.PATH}" ${A.COMPILER.C.ELF.FLAGS} ${A.COMPILER.C.ELF.EXTRA_FLAGS} "-T${A.BUILD.VARIANT.PATH}/${A.BUILD.LDSCRIPT}" "-Wl,-Map,${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.map" --specs\=nano.specs --specs\=nosys.specs ${A.COMPILER.LDFLAGS} -o "${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.elf" ${A.OBJECT_FILES} ${A.COMPILER.LIBRARIES.LDFLAGS} -Wl,--start-group ${A.COMPILER.ARM.CMSIS.LDFLAGS} -lm "${A.BUILD.PATH}/${A.ARCHIVE_FILE}" -Wl,--end-group
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.1/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.1/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.C.CMD}" ${A.COMPILER.C.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.C.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} ${A.INCLUDES} 
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.C.CMD}" ${A.COMPILER.C.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.C.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} "-I${A.BUILD.CORE.PATH}/api/deprecated" "-I${A.BUILD.CORE.PATH}/api/deprecated-avr-comp" ${A.INCLUDES} 
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.2/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.2/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.2/value=\ 
@@ -244,10 +265,10 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PAT
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN.3/value=
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.C.CMD}" ${A.COMPILER.C.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.C.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} ${A.INCLUDES} "${A.SOURCE_FILE}" -o "${A.OBJECT_FILE}"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.C.O.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.C.CMD}" ${A.COMPILER.C.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.C.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} "-I${A.BUILD.CORE.PATH}/api/deprecated" "-I${A.BUILD.CORE.PATH}/api/deprecated-avr-comp" ${A.INCLUDES} "${A.SOURCE_FILE}" -o "${A.OBJECT_FILE}"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.1/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.1/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.CPP.CMD}" ${A.COMPILER.CPP.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.CPP.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} ${A.INCLUDES} 
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.CPP.CMD}" ${A.COMPILER.CPP.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.CPP.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} "-I${A.BUILD.CORE.PATH}/api/deprecated" "-I${A.BUILD.CORE.PATH}/api/deprecated-avr-comp" ${A.INCLUDES} 
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.2/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.2/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.2/value=\ 
@@ -256,7 +277,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.P
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN.3/value=
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.CPP.CMD}" ${A.COMPILER.CPP.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.CPP.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} ${A.INCLUDES} "${A.SOURCE_FILE}" -o "${A.OBJECT_FILE}"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.CPP.O.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.CPP.CMD}" ${A.COMPILER.CPP.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.CPP.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} "-I${A.BUILD.CORE.PATH}/api/deprecated" "-I${A.BUILD.CORE.PATH}/api/deprecated-avr-comp" ${A.INCLUDES} "${A.SOURCE_FILE}" -o "${A.OBJECT_FILE}"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.OBJCOPY.BIN.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.OBJCOPY.BIN.PATTERN/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.OBJCOPY.BIN.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.ELF2HEX.CMD}" ${A.COMPILER.ELF2HEX.BIN.FLAGS} ${A.COMPILER.ELF2HEX.EXTRA_FLAGS} "${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.elf" "${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.bin"
@@ -277,7 +298,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.OUTPUT.
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.OUTPUT.TMP_FILE/value=${A.BUILD.PROJECT_NAME}.${A.BUILD.PREFERRED_OUT_FORMAT}
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.1/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.1/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.S.CMD}" ${A.COMPILER.S.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.S.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} ${A.INCLUDES} 
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.S.CMD}" ${A.COMPILER.S.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.S.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} "-I${A.BUILD.CORE.PATH}/api/deprecated" "-I${A.BUILD.CORE.PATH}/api/deprecated-avr-comp" ${A.INCLUDES} 
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.2/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.2/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.2/value=\ 
@@ -286,7 +307,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PAT
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN.3/value=
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.S.CMD}" ${A.COMPILER.S.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.S.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} ${A.INCLUDES} "${A.SOURCE_FILE}" -o "${A.OBJECT_FILE}"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.S.O.PATTERN/value="${A.COMPILER.PATH}${A.COMPILER.S.CMD}" ${A.COMPILER.S.FLAGS} -DF_CPU\=${A.BUILD.F_CPU} -DARDUINO\=${A.RUNTIME.IDE.VERSION} -DARDUINO_${A.BUILD.BOARD} -DARDUINO_ARCH_${A.BUILD.ARCH} ${A.COMPILER.S.EXTRA_FLAGS} ${A.BUILD.EXTRA_FLAGS} ${A.COMPILER.ARM.CMSIS.C.FLAGS} "-I${A.BUILD.CORE.PATH}/api/deprecated" "-I${A.BUILD.CORE.PATH}/api/deprecated-avr-comp" ${A.INCLUDES} "${A.SOURCE_FILE}" -o "${A.OBJECT_FILE}"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.SIZE.PATTERN.1/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.SIZE.PATTERN.1/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.SIZE.PATTERN.1/value="${A.COMPILER.PATH}${A.COMPILER.SIZE.CMD}" -A "${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.elf"
@@ -301,13 +322,13 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.SIZE.RE
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RECIPE.SIZE.REGEX/value=^(?\:\\.text|\\.data|)\\s+([0-9]+).*
 environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.CORE.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.CORE.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.CORE.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9
+environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.CORE.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11
 environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.UPLOAD.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.UPLOAD.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.UPLOAD.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9
+environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.UPLOAD.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11
 environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.VARIANT.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.VARIANT.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.VARIANT.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9
+environment/project/io.sloeber.core.toolChain.release.724714924/A.REFERENCED.VARIANT.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.HARDWARE.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.HARDWARE.PATH/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.HARDWARE.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd
@@ -316,7 +337,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.IDE.VE
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.IDE.VERSION/value=10812
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.PLATFORM.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.PLATFORM.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.PLATFORM.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9
+environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.PLATFORM.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.TOOLS.ARDUINOOTA-1.2.1.PATH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.TOOLS.ARDUINOOTA-1.2.1.PATH/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.RUNTIME.TOOLS.ARDUINOOTA-1.2.1.PATH/value=${eclipse_home}/arduinoPlugin/packages/arduino/tools/arduinoOTA/1.2.1
@@ -476,21 +497,6 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.ESP8266O
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.ESPTOOL.NETWORK.PASSWORD/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.ESPTOOL.NETWORK.PASSWORD/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.ESPTOOL.NETWORK.PASSWORD/value=${A.NETWORK.AUTH}
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.CMD.WINDOWS/delimiter=\:
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.CMD.WINDOWS/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.CMD.WINDOWS/value=arm-none-eabi-gdb.exe
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.CMD/delimiter=\:
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.CMD/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.CMD/value=arm-none-eabi-gdb
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.DEBUG.PATTERN/delimiter=\:
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.DEBUG.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.DEBUG.PATTERN/value="${A.TOOLS.GDB-OPENOCD.PATH}/${A.TOOLS.GDB-OPENOCD.CMD}" --interpreter\=${A.TOOLS.GDB-OPENOCD.INTERPRETER} -ex "set remotetimeout 5" -ex "set pagination off" -ex 'target extended-remote | "${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" --file "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "gdb_port pipe" -c "telnet_port 0"' "${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.elf"
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.INTERPRETER/delimiter=\:
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.INTERPRETER/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.INTERPRETER/value=console
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.PATH/delimiter=\:
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.PATH/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.GDB-OPENOCD.PATH/value=${A.RUNTIME.TOOLS.ARM-NONE-EABI-GCC-7-2017Q4.PATH}/bin/
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PARAMS.QUIET/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PARAMS.QUIET/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PARAMS.QUIET/value=-d0
@@ -499,7 +505,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PARAMS.VERBOSE/value=-d2
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PATTERN/value="${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/${A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD}" ${A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.VERBOSE} -s "${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; init; halt; at91samd bootloader 0; program ${A.TOOLS.OPENOCD-WITHBOOTSIZE.${A.RUNTIME.PLATFORM.PATH}/BOOTLOADERS/${A.BOOTLOADER.FILE}} verify reset; shutdown"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.PATTERN/value="${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/${A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD}" ${A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.VERBOSE} -s "${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; init; halt; at91samd bootloader 0; program {${A.RUNTIME.PLATFORM.PATH}/bootloaders/${A.BOOTLOADER.FILE}} verify reset; shutdown"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD.WINDOWS/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD.WINDOWS/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD.WINDOWS/value=bin/openocd.exe
@@ -526,7 +532,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.PARAMS.VERBOSE/value=-d2
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.PATTERN/value="${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/${A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD}" ${A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.VERBOSE} -s "${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program ${A.TOOLS.OPENOCD-WITHBOOTSIZE.${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.ELF} verify reset; shutdown"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.PATTERN/value="${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/${A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD}" ${A.TOOLS.OPENOCD-WITHBOOTSIZE.PROGRAM.VERBOSE} -s "${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program {${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.elf} verify reset; shutdown"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PARAMS.QUIET/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PARAMS.QUIET/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PARAMS.QUIET/value=-d0
@@ -535,7 +541,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PARAMS.VERBOSE/value=-d2
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PATTERN/value="${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/${A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD}" ${A.UPLOAD.VERBOSE} -s "${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program ${A.TOOLS.OPENOCD-WITHBOOTSIZE.${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.BIN} verify reset ${A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.SIZE}; shutdown"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD-WITHBOOTSIZE.UPLOAD.PATTERN/value="${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/${A.TOOLS.OPENOCD-WITHBOOTSIZE.CMD}" ${A.UPLOAD.VERBOSE} -s "${A.TOOLS.OPENOCD-WITHBOOTSIZE.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program {${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.bin} verify reset ${A.TOOLS.OPENOCD-WITHBOOTSIZE.BOOTLOADER.SIZE}; shutdown"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PARAMS.QUIET/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PARAMS.QUIET/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PARAMS.QUIET/value=-d0
@@ -544,7 +550,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PARAMS.VERBOSE/value=-d2
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PATTERN/value="${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" ${A.TOOLS.OPENOCD.BOOTLOADER.VERBOSE} -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; init; halt; at91samd bootloader 0; program ${A.TOOLS.OPENOCD.${A.RUNTIME.PLATFORM.PATH}/BOOTLOADERS/${A.BOOTLOADER.FILE}} verify reset; shutdown"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.BOOTLOADER.PATTERN/value="${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" ${A.TOOLS.OPENOCD.BOOTLOADER.VERBOSE} -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; init; halt; at91samd bootloader 0; program {${A.RUNTIME.PLATFORM.PATH}/bootloaders/${A.BOOTLOADER.FILE}} verify reset; shutdown"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.CMD.WINDOWS/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.CMD.WINDOWS/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.CMD.WINDOWS/value=bin/openocd.exe
@@ -574,7 +580,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.PROGRAM.PARAMS.VERBOSE/value=-d2
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.PROGRAM.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.PROGRAM.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.PROGRAM.PATTERN/value="${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" ${A.TOOLS.OPENOCD.PROGRAM.VERBOSE} -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program ${A.TOOLS.OPENOCD.${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.HEX} verify reset; shutdown"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.PROGRAM.PATTERN/value="${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" ${A.TOOLS.OPENOCD.PROGRAM.VERBOSE} -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program {${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.hex} verify reset; shutdown"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.NETWORK_PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.NETWORK_PATTERN/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.NETWORK_PATTERN/value=${A.TOOLS.OPENOCD.NETWORK_CMD} -address ${A.SERIAL.PORT} -port 65280 -username arduino -password "${A.NETWORK.PASSWORD}" -sketch "${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.bin" -upload /sketch -b
@@ -586,7 +592,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.PARAMS.VERBOSE/value=-d2
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.PATTERN/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.PATTERN/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.PATTERN/value="${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" ${A.UPLOAD.VERBOSE} -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program ${A.TOOLS.OPENOCD.${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.BIN} verify reset 0x2000; shutdown"
+environment/project/io.sloeber.core.toolChain.release.724714924/A.TOOLS.OPENOCD.UPLOAD.PATTERN/value="${A.TOOLS.OPENOCD.PATH}/${A.TOOLS.OPENOCD.CMD}" ${A.UPLOAD.VERBOSE} -s "${A.TOOLS.OPENOCD.PATH}/share/openocd/scripts/" -f "${A.RUNTIME.PLATFORM.PATH}/variants/${A.BUILD.VARIANT}/${A.BUILD.OPENOCDSCRIPT}" -c "telnet_port disabled; program {${A.BUILD.PATH}/${A.BUILD.PROJECT_NAME}.bin} verify reset 0x2000; shutdown"
 environment/project/io.sloeber.core.toolChain.release.724714924/A.UPLOAD.ALTID/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.UPLOAD.ALTID/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.UPLOAD.ALTID/value=no_altID
@@ -619,7 +625,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/A.UPLOAD.WAIT_FO
 environment/project/io.sloeber.core.toolChain.release.724714924/A.UPLOAD.WAIT_FOR_UPLOAD_PORT/value=true
 environment/project/io.sloeber.core.toolChain.release.724714924/A.VERSION/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.VERSION/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/A.VERSION/value=1.8.9
+environment/project/io.sloeber.core.toolChain.release.724714924/A.VERSION/value=1.8.11
 environment/project/io.sloeber.core.toolChain.release.724714924/A.VID.0/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/A.VID.0/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/A.VID.0/value=0x2341
@@ -631,7 +637,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ARCHITECT
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ARCHITECTURE_ID/value=samd
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARDS_FILE/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARDS_FILE/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARDS_FILE/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9/boards.txt
+environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARDS_FILE/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11/boards.txt
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARD_ID/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARD_ID/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARD_ID/value=mkrwan1300
@@ -643,7 +649,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.COM_PORT/
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.COM_PORT/value=/dev/cu.usbmodem143101
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/value=${eclipse_home}
+environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/value=${eclipse_home}////////////////////////////
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.EXTRA.ALL/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.EXTRA.ALL/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.EXTRA.ALL/value=
@@ -682,7 +688,7 @@ environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.PROJECT_N
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.PROJECT_NAME/value=LoRaWanTest
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SELECTED.PLATFORM/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SELECTED.PLATFORM/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SELECTED.PLATFORM/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.9
+environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SELECTED.PLATFORM/value=${eclipse_home}/arduinoPlugin/packages/arduino/hardware/samd/1.8.11
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SIZE.SWITCH/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SIZE.SWITCH/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.SIZE.SWITCH/value=${A.RECIPE.SIZE.PATTERN}

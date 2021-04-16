@@ -80,23 +80,23 @@ typedef struct _testParam{
 static testParam_t testA1 = {
 	0x01,	// channels
 	1,		// TX
-	5,		// DR max
-	0		// DR min
+	5,		// DR
+	0		// Mode
 };
 
 // Test definition
 static testParam_t testB1 = {
 	0x01,	// channels
 	4,		// TX
-	5,		// DR max
-	0		// DR min
+	5,		// DR
+	0		// Mode
 };
 
 static testParam_t testC1 = {
 	0xFF,	// channels
 	1,		// TX
-	5,		// DR max
-	0		// DR min
+	5,		// DR
+	0		// Mode
 };
 
 // Test group definition - A all remain the same
@@ -402,7 +402,6 @@ void readInput() {
 		case 'T':
 		case 't': // read test number to go
 			testNo = (uint8_t)readSerialD();
-			debugSerial.println(testNo);
 			break;
 
 		case 'U':
@@ -424,7 +423,6 @@ void readInput() {
 		case 'P':
 		case 'p': // read tx power index
 			txPowerTst = (uint8_t)readSerialD();
-			debugSerial.println(txPowerTst);
 //			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
 //				eeprom_update_byte(&ee_txPowerTst, txPowerTst);
 //			}
@@ -432,7 +430,6 @@ void readInput() {
 		case 'F':
 		case 'f':
 			Frequency = readSerialD();
-			debugSerial.println(Frequency);
 			break;
 		case 'R':
 		case 'r': // set to run
