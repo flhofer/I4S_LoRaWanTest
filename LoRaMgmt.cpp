@@ -174,18 +174,20 @@ void LoRaMgmtSetup(){
  *
  * Arguments: -
  *
- * Return:	  -
+ * Return:	  - return 0 if OK, -1 if error
  */
-void LoRaMgmtSetupDumb(long FRQ){
+int LoRaMgmtSetupDumb(long FRQ){
 
 	modem.dumb();
 
 	// Configure LoRa module to transmit and receive at 915MHz (915*10^6)
 	// Replace 915E6 with the frequency you need (eg. 433E6 for 433MHz)
 	if (!LoRa.begin(FRQ)) {
-	Serial.println("Starting LoRa failed!");
-	while (1);
+		Serial.println("Starting LoRa failed!");
+		return 1;
 	}
+
+	return 0;
 }
 
 /*
@@ -215,14 +217,14 @@ void LoRaSetGblParam(bool confirm, int datalen){
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax){
+int LoRaSetChannels(uint16_t chnMsk, uint8_t dr){
 
 	bool retVal = true;
 
 	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1)
 		if ((bool)chnMsk & 0x01) {
 			retVal &= modem.enableChannel((uint8_t)i);
-			retVal &= modem.dataRate(drMin);
+			retVal &= modem.dataRate(dr);
 		}
 		else
 			retVal &= modem.disableChannel((uint8_t)i);

@@ -242,8 +242,12 @@ runTest(testParam_t * testNow){
 		LoRaSetGblParam(confirmed, dataLen);
 
 		// Setup channels as configured
-		if ((LoRaSetChannels(testNow->chnEnabled, testNow->dr, testNow->Mode)) // set channels
-			|| (LoRaMgmtTxPwr(testNow->txPowerIdx))) { // set power index;
+		if (
+			(testNow->Mode == 0
+				&& LoRaMgmtSetupDumb(Frequency) )
+			|| (testNow->Mode == 1
+				&& LoRaSetChannels(testNow->chnEnabled, testNow->dr))	// set channels
+			|| (LoRaMgmtTxPwr(testNow->txPowerIdx))) { 					// set power index;
 			tstate = rError;
 			break; // TODO: error
 		}

@@ -17,10 +17,10 @@
 #define LORACHNMAX 16
 
 void LoRaMgmtSetup();
-void LoRaMgmtSetupDumb(long FRQ);
+int LoRaMgmtSetupDumb(long FRQ);
 void LoRaSetGblParam(bool confirm, int datalen);
 
-int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax);
+int LoRaSetChannels(uint16_t chnMsk, uint8_t dr);
 
 int LoRaMgmtSend();
 int LoRaMgmtPoll();
