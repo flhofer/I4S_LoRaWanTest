@@ -439,21 +439,17 @@ void readInput() {
 		A = debugSerial.read();
 		switch (A){
 
-//		// Generic Settings
-//		static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
-//		static long Frequency;							// Frequency of dumb lora mode
-//
-//		// LoRaWan settings
-//		static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
-//		static uint16_t chnEnabled;						// Channels enabled mask for LoRaWan mode tests
-//		static uint8_t txPowerTst = 4;					// txPower setting for the low power test
-//		static uint8_t dataLen = 1;						// data length to send over LoRa for a test
-//		static uint8_t dataRate = 5;					// data rate starting value
-//		static uint8_t rx1Window;						// RX1 Window
-//		static uint8_t rx1Delay;						// RX1 delay
-//		static uint8_t rx1DrOffset;						// RX1 DR offset
-//		static uint8_t rx2Window;						// RX2 Window
-//		static uint8_t rx2delay;						// RX2 delay
+		case 'm': // read test mode
+			mode = (uint8_t)readSerialD();
+			if (mode > 1){
+				debugSerial.println("Invalid mode");
+				mode = 1; // set to default
+			}
+			break;
+
+		case 'f':
+			Frequency = readSerialD();
+			break;
 
 		case 'c': // set to confirmed
 			confirmed = true;
@@ -466,26 +462,39 @@ void readInput() {
 			chnEnabled = readSerialH();
 			break;
 
-		case 'P':
 		case 'p': // read tx power index
 			txPowerTst = (uint8_t)readSerialD();
 			break;
-		case 'F':
-		case 'f':
-			Frequency = readSerialD();
+
+
+		case 'l': // read data length
+			dataLen = (uint8_t)readSerialD();
+			if (dataLen > 255){
+				debugSerial.println("Invalid data length");
+				dataLen = 1; // set to default
+			}
 			break;
-		case 'R':
-		case 'r': // set to run
+
+		case 'd': // read data length
+			dataRate = (uint8_t)readSerialD();
+			if (dataRate > 5){ // we exclude 6 and 7 for now
+				debugSerial.println("Invalid data rate");
+				dataRate = 5; // set to default
+			}
+			break;
+
+			//		static uint8_t rx1Window;						// RX1 Window
+			//		static uint8_t rx1Delay;						// RX1 delay
+			//		static uint8_t rx1DrOffset;						// RX1 DR offset
+			//		static uint8_t rx2Window;						// RX2 Window
+			//		static uint8_t rx2delay;						// RX2 delay
+
+		case 'R': // set to run
 			testend = false;
 			startTs = millis();
 			tstate = rInit;
 			break;
 
-		case 'd':
-
-		case 'D': // reset to defaults
-
-			break;
 		}
 	}
 
