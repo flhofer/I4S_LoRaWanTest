@@ -185,6 +185,41 @@ void writeEEPromDefaults() { // for defaults
 
 }
 
+uint16_t readSerialH(){
+	char nChar;
+	uint16_t retVal = 0;
+	while (1){
+		nChar = debugSerial.peek();
+		switch (nChar)
+		{
+			case '0' ... '9': // Digits
+				debugSerial.read();
+				retVal = retVal*16 + (int16_t)(nChar - '0');
+				break;
+			case 'a' ... 'f': // small letters a-f
+				debugSerial.read();
+				retVal = retVal*16 + (int16_t)(nChar - 55); // 55 = A - 10
+				break;
+			case 'A' ... 'F': // capital letters A-F
+				debugSerial.read();
+				retVal = retVal*16 + (int16_t)(nChar - 87); // 87 = a - 10
+				break;
+			case 'h':	// hex termination
+				debugSerial.read();
+				// fall-through
+				// @suppress("No break at end of case")
+			default:
+				return retVal;
+		}
+
+		if (log10((double)retVal) >= 4.0f ){
+			debugSerial.println("Error: too long value!");
+			break;
+		}
+	}
+	return retVal;
+}
+
 uint16_t readSerialD(){
 	char A;
 	uint16_t retVal = 0;
@@ -404,42 +439,36 @@ void readInput() {
 		A = debugSerial.read();
 		switch (A){
 
-		// read parameter, they come together
-		case 'G':
-		case 'g': // read test group
-			A = debugSerial.read();
-			A = A - 65;
-			if (A < 5 && A >= 0)
-				testGrp = A;
-			break;
+//		// Generic Settings
+//		static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
+//		static long Frequency;							// Frequency of dumb lora mode
+//
+//		// LoRaWan settings
+//		static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
+//		static uint16_t chnEnabled;						// Channels enabled mask for LoRaWan mode tests
+//		static uint8_t txPowerTst = 4;					// txPower setting for the low power test
+//		static uint8_t dataLen = 1;						// data length to send over LoRa for a test
+//		static uint8_t dataRate = 5;					// data rate starting value
+//		static uint8_t rx1Window;						// RX1 Window
+//		static uint8_t rx1Delay;						// RX1 delay
+//		static uint8_t rx1DrOffset;						// RX1 DR offset
+//		static uint8_t rx2Window;						// RX2 Window
+//		static uint8_t rx2delay;						// RX2 delay
 
-		case 'T':
-		case 't': // read test number to go
-			testNo = (uint8_t)readSerialD();
+		case 'c': // set to confirmed
+			confirmed = true;
 			break;
-
-		case 'U':
 		case 'u': // set to unconfirmed
 			confirmed = false;
-//			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-//				eeprom_update_byte(&ee_confirmed, confirmed);
-//			}
 			break;
 
 		case 'C':
-		case 'c': // set to confirmed
-			confirmed = true;
-//			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-//				eeprom_update_byte(&ee_confirmed, confirmed);
-//			}
+			chnEnabled = readSerialH();
 			break;
 
 		case 'P':
 		case 'p': // read tx power index
 			txPowerTst = (uint8_t)readSerialD();
-//			ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-//				eeprom_update_byte(&ee_txPowerTst, txPowerTst);
-//			}
 			break;
 		case 'F':
 		case 'f':
@@ -448,25 +477,14 @@ void readInput() {
 		case 'R':
 		case 'r': // set to run
 			testend = false;
-			prntGrp='A'+testGrp;
-			prntTno=testNo;
-			// run through tests to pick the right test
-			while (testGrp && *tgrp){
-				tgrp++; // next test group
-				testGrp--;
-			}
-			tno = *tgrp;
-			while (testNo && *tno){
-				tgrp++; // next test group
-				testNo--;
-			}
 			startTs = millis();
 			tstate = rInit;
 			break;
+
 		case 'd':
+
 		case 'D': // reset to defaults
-			writeEEPromDefaults();
-			readEEPromSettings();
+
 			break;
 		}
 	}
