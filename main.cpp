@@ -40,22 +40,32 @@ const char prtTblTms[] PROGMEM = " ms";
 
 /* Locals 		*/
 
+// Working variables
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
 static sLoRaResutls_t * trn;					// Pointer to actual entry
-static char prntGrp;							// Actual executing group
-static int prntTno;								// actual executing testno
-static uint8_t actChan = 16;					// active channels
-static int testend = 1;							// is test terminated?
-static uint8_t dataLen = 1;						// data length to send over LoRa for a test
-static uint8_t dataLenMin = 1;					// Min data length to send over LoRa
-static uint8_t dataLenMax = 255;				// Max data length to send over LoRa
-static uint8_t txPowerTst = 4;					// txPower setting for the low power test
-static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
-static long Frequency;							// Frequency of dumb lora mode
-
-
 static uint8_t testGrp = 1;						// Running variables number
 static uint8_t testNo = 1;						// "	"	number
+static uint8_t actChan = 16;					// active channels
+static char prntGrp;							// Actual executing group
+static int prntTno;								// actual executing testno
+static int testend = 1;							// is test terminated?
+
+// Generic Settings
+static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
+static long Frequency;							// Frequency of dumb lora mode
+
+// LoRaWan settings
+static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
+static uint16_t chnEnabled;						// Channels enabled mask for LoRaWan mode tests
+static uint8_t txPowerTst = 4;					// txPower setting for the low power test
+static uint8_t dataLen = 1;						// data length to send over LoRa for a test
+static uint8_t dataRate = 5;					// data rate starting value
+static uint8_t rx1Window;						// RX1 Window
+static uint8_t rx1Delay;						// RX1 delay
+static uint8_t rx1DrOffset;						// RX1 DR offset
+static uint8_t rx2Window;						// RX2 Window
+static uint8_t rx2delay;						// RX2 delay
+
 
 /* 	Globals		*/
 
