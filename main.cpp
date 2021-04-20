@@ -9,22 +9,22 @@
 
 /* Strings 		*/
 
-const char prtSttStart[] = "Start test\n";
-const char prtSttPoll[] = "Poll for answer\n";
-const char prtSttStop[] = "Stop test\n";
-const char prtSttRetry[] = "Retry\n";
-const char prtSttEvaluate[] = "Evaluate\n";
-const char prtSttAddMeas[] = " - add measurement\n";
-const char prtSttReset[] = "Reset\n";
-const char prtSttRestart[] = "Restart - Init\n";
-const char prtSttEnd[] = "End test\n";
-const char prtSttPollErr[] = "Poll - No response from server.\n";
-const char prtSttDone[] = "done\n";
-const char prtSttErrExec[] = "ERROR: during state execution\n";
-const char prtSttErrText[] = "ERROR: test malfunction\n";
-const char prtSttWrnConf[] = "WARN: Invalid test configuration\n";
-const char prtSttSelect[] = "Select Test:\n";
-const char prtSttResults[] = "Results:\n";
+const char prtSttStart[] PROGMEM = "Start test\n";
+const char prtSttPoll[] PROGMEM = "Poll for answer\n";
+const char prtSttStop[] PROGMEM = "Stop test\n";
+const char prtSttRetry[] PROGMEM = "Retry\n";
+const char prtSttEvaluate[] PROGMEM = "Evaluate\n";
+const char prtSttAddMeas[] PROGMEM = " - add measurement\n";
+const char prtSttReset[] PROGMEM = "Reset\n";
+const char prtSttRestart[] PROGMEM = "Restart - Init\n";
+const char prtSttEnd[] PROGMEM = "End test\n";
+const char prtSttPollErr[] PROGMEM = "Poll - No response from server.\n";
+const char prtSttDone[] PROGMEM = "done\n";
+const char prtSttErrExec[] PROGMEM = "ERROR: during state execution\n";
+const char prtSttErrText[] PROGMEM = "ERROR: test malfunction\n";
+const char prtSttWrnConf[] PROGMEM = "WARN: Invalid test configuration\n";
+const char prtSttSelect[] PROGMEM = "Select Test:\n";
+const char prtSttResults[] PROGMEM = "Results:\n";
 
 const char prtTblCR[] PROGMEM = " CR 4/";
 const char prtTblDR[] PROGMEM = " DR ";
