@@ -63,73 +63,6 @@ static uint8_t dataRate = 5;					// data rate starting value
 
 int debug = 1;
 
-// Test data structure
-typedef struct _testParam{
-	uint16_t chnEnabled;	// Channels enabled for this test, OR 0.1 MHz res of dumb channel
-	uint8_t txPowerIdx;		// Initial TX power index
-	uint8_t dr;				// data rate starting value
-	uint8_t Mode;			// mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
-} testParam_t;
-
-/*************** TEST CONFIGURATIONS ********************/
-
-// Test definition
-static testParam_t testA1 = {
-	0x01,	// channels
-	1,		// TX
-	5,		// DR
-	0		// Mode
-};
-
-// Test definition
-static testParam_t testB1 = {
-	0x01,	// channels
-	4,		// TX
-	5,		// DR
-	0		// Mode
-};
-
-static testParam_t testC1 = {
-	0xFF,	// channels
-	1,		// TX
-	5,		// DR
-	0		// Mode
-};
-
-// Test group definition - A all remain the same
-static testParam_t * testGrpA[] = {
-		&testA1,
-		&testC1,
-		&testA1,
-		&testA1,
-		&testA1,
-		NULL // Terminator for automatic sizing
-};
-
-static testParam_t * testGrpB[] = {
-		&testA1,
-		&testB1,
-		&testA1,
-		NULL // Terminator for automatic sizing
-};
-
-static testParam_t * testGrpC[] = {
-		&testA1,
-		&testA1,
-		&testC1,
-		&testC1,
-		&testC1,
-		NULL // Terminator for automatic sizing
-};
-
-// All tests grouped
-static testParam_t **testConfig[] = { // array of testParam_t**
-		testGrpA, // array of testParam_t* (by reference), pointer to first testParam_t* in array
-		testGrpB,
-		testGrpC,
-		NULL // Terminator for automatic sizing
-};
-
 /*************** MIXED STUFF ********************/
 
 static void
@@ -224,9 +157,6 @@ uint16_t readSerialD(){
 
 /*************** TEST MANAGEMENT FUNCTIONS*****************/
 
-static testParam_t ** tno = NULL;
-static testParam_t *** tgrp = NULL;
-
 static unsigned long startTs = 0; // loop timer
 
 // Enumeration for test status
@@ -247,20 +177,14 @@ static int	retries; 			// un-conf send retries
 /*
  * runTest: test runner
  *
- * Arguments: - pointer to test structure of actual test
+ * Arguments: -
  *
  * Return:	  - test run enumeration status
  */
 static enum testRun
-runTest(testParam_t * testNow){
+runTest(){
 
 	int failed = 0;
-
-	if (!testNow){
-		debugSerial.println(prtSttWrnConf);
-		return rError;
-	}
-
 	int ret = 0;
 	switch(tstate){
 
@@ -275,11 +199,11 @@ runTest(testParam_t * testNow){
 
 		// Setup channels as configured
 		if (
-			(testNow->Mode == 0
+			(mode == 0
 				&& LoRaMgmtSetupDumb(Frequency) )
-			|| (testNow->Mode == 1
-				&& LoRaSetChannels(testNow->chnEnabled, testNow->dr))	// set channels
-			|| (LoRaMgmtTxPwr(testNow->txPowerIdx))) { 					// set power index;
+			|| (mode == 1
+				&& LoRaSetChannels(chnEnabled, dataRate))	// set channels
+			|| (LoRaMgmtTxPwr(txPowerTst))) { 					// set power index;
 			tstate = rError;
 			break; // TODO: error
 		}
@@ -476,6 +400,9 @@ void readInput() {
 			tstate = rInit;
 			break;
 
+		case 'S': // stop test
+			testend = true;
+			break;
 		}
 	}
 
@@ -512,8 +439,6 @@ void setup()
 	REG_PORT_OUTCLR0 = PORT_PA20;
 	LoRaMgmtSetup();
 
-	tgrp = &testConfig[0]; 	// assign pointer to pointer to TestgroupA
-	tno = *tgrp; 			// assign pointer to pointer to test 1
 	trn = &testResults[0];	// Init results pointer
 
 	startTs = millis();		// snapshot starting time
@@ -529,11 +454,10 @@ void loop()
 	if (testend)
 		readInput();
 	else{
-		if (*tno)
-			runTest(*tno);
-		else
-			debugSerial.print(prtSttErrText);
+		runTest();
+		// received something?
+		if (debugSerial.peek())
+			//stop?
+			readInput();
 	}
-	// received something
-	// debugSerial.read();
 }
