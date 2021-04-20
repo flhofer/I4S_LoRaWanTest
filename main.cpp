@@ -43,8 +43,6 @@ const char prtTblTms[] PROGMEM = " ms";
 // Working variables
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
 static sLoRaResutls_t * trn;					// Pointer to actual entry
-static uint8_t testGrp = 1;						// Running variables number
-static uint8_t testNo = 1;						// "	"	number
 static uint8_t actChan = 16;					// active channels
 static char prntGrp;							// Actual executing group
 static int prntTno;								// actual executing testno
@@ -60,12 +58,6 @@ static uint16_t chnEnabled;						// Channels enabled mask for LoRaWan mode tests
 static uint8_t txPowerTst = 4;					// txPower setting for the low power test
 static uint8_t dataLen = 1;						// data length to send over LoRa for a test
 static uint8_t dataRate = 5;					// data rate starting value
-static uint8_t rx1Window;						// RX1 Window
-static uint8_t rx1Delay;						// RX1 delay
-static uint8_t rx1DrOffset;						// RX1 DR offset
-static uint8_t rx2Window;						// RX2 Window
-static uint8_t rx2delay;						// RX2 delay
-
 
 /* 	Globals		*/
 
@@ -77,11 +69,6 @@ typedef struct _testParam{
 	uint8_t txPowerIdx;		// Initial TX power index
 	uint8_t dr;				// data rate starting value
 	uint8_t Mode;			// mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
-	// RX1 Window
-	// RX1 delay
-	// RX1 DR offset
-	// RX2 Window
-	// RX2 delay
 } testParam_t;
 
 /*************** TEST CONFIGURATIONS ********************/
@@ -469,7 +456,7 @@ void readInput() {
 
 		case 'l': // read data length
 			dataLen = (uint8_t)readSerialD();
-			if (dataLen > 255){
+			if (dataLen > 250){
 				debugSerial.println("Invalid data length");
 				dataLen = 1; // set to default
 			}
@@ -482,12 +469,6 @@ void readInput() {
 				dataRate = 5; // set to default
 			}
 			break;
-
-			//		static uint8_t rx1Window;						// RX1 Window
-			//		static uint8_t rx1Delay;						// RX1 delay
-			//		static uint8_t rx1DrOffset;						// RX1 DR offset
-			//		static uint8_t rx2Window;						// RX2 Window
-			//		static uint8_t rx2delay;						// RX2 delay
 
 		case 'R': // set to run
 			testend = false;
