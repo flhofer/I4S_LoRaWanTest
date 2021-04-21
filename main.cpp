@@ -421,16 +421,12 @@ void initVariant () {
 void setup()
 {
 	// Initialize Serial ports 0
-	if (debug) // don't even try if not set
-	{
-		// setup serial for debug, disable if no connection after 10 seconds
-		debugSerial.begin(9600);
-		int waitSE = 999;	// wait for 10 seconds, -10 ms for computation
-		while (!debugSerial && waitSE) {
-		  //delay(10);// -- Included in Serial_::operator()
-		  waitSE--;
-		}
-		debug = ((waitSE));	// reset debug flag if time is elapsed
+	// setup serial for debug, disable if no connection after 10 seconds
+	debugSerial.begin(9600);
+	int waitSE = 999;	// wait for 10 seconds, -10 ms for computation
+	while (!debugSerial && waitSE) {
+	  delay(10);// -- Included in Serial_::operator()
+	  waitSE--;
 	}
 
 	// Blink once PIN20 to show program start
