@@ -414,14 +414,11 @@ void readInput() {
 
 }
 
-void initVariant () {
-	REG_PORT_DIRSET0 = LEDBUILDIN; // Set led to output
-}
-
-
 //The setup function is called once at startup of the sketch
 void setup()
 {
+	REG_PORT_DIRSET0 = LEDBUILDIN; // Set led to output
+
 	// Initialize Serial ports 0
 	// setup serial for debug, disable if no connection after 10 seconds
 	debugSerial.begin(9600);
