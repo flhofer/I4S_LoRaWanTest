@@ -6,6 +6,7 @@
 #define TST_RETRY	5			// How many times retry to send message
 #define TST_MXRSLT	30			// What's the max number of test results we allow?
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
+#define LEDBUILDIN	PORT_PA20	// MKRWan1300 build in led position
 
 /* Strings 		*/
 
@@ -95,14 +96,6 @@ printTestResults(){
 				trn->rxRssi, trn->rxSnr);
 		debugSerial.println(buf);
 	}
-}
-
-void readEEPromSettings () {
-
-}
-
-void writeEEPromDefaults() { // for defaults
-
 }
 
 uint16_t readSerialH(){
@@ -409,11 +402,7 @@ void readInput() {
 }
 
 void initVariant () {
-
-	PORT->Group[0].PINCFG[15].reg = PORT_PINCFG_INEN | PORT_PINCFG_PULLEN; // Input and Pullup, Port A, pin 15
-	REG_PORT_OUTSET0 = PORT_PA15; // PULL-UP resistor rather than pull-down
-
-	REG_PORT_DIRSET0 = PORT_PA20; // Set led to output
+	REG_PORT_DIRSET0 = LEDBUILDIN; // Set led to output
 }
 
 
@@ -428,16 +417,14 @@ void setup()
 	  delay(10);// -- Included in Serial_::operator()
 	  waitSE--;
 	}
+	debug = ((waitSE));	// reset debug flag if time is elapsed
 
 	// Blink once PIN20 to show program start
-	REG_PORT_OUTSET0 = PORT_PA20;
+	REG_PORT_OUTSET0 = LEDBUILDIN;
 	delay(500);
-	REG_PORT_OUTCLR0 = PORT_PA20;
+	REG_PORT_OUTCLR0 = LEDBUILDIN;
+
 	LoRaMgmtSetup();
-
-	trn = &testResults[0];	// Init results pointer
-
-	startTs = millis();		// snapshot starting time
 
 	debugSerial.print(prtSttSelect);
 	debugSerial.flush();
