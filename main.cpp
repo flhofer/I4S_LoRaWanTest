@@ -51,11 +51,11 @@ static int testend = 1;							// is test terminated?
 
 // Generic Settings
 static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
-static long Frequency;							// Frequency of dumb lora mode
+static long Frequency = 8683;					// Frequency of dumb lora mode
 
 // LoRaWan settings
 static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
-static uint16_t chnEnabled;						// Channels enabled mask for LoRaWan mode tests
+static uint16_t chnEnabled = 0xF;				// Channels enabled mask for LoRaWan mode tests
 static uint8_t txPowerTst = 4;					// txPower setting for the low power test
 static uint8_t dataLen = 1;						// data length to send over LoRa for a test
 static uint8_t dataRate = 5;					// data rate starting value
@@ -126,7 +126,7 @@ uint16_t readSerialH(){
 		}
 
 		if (log10((double)retVal) >= 4.0f ){
-			debugSerial.println("Error: too long value!");
+			debugSerial.println("Error: too long value! Remember using h to terminate hex");
 			break;
 		}
 	}
@@ -346,13 +346,17 @@ void readInput() {
 		case 'm': // read test mode
 			mode = (uint8_t)readSerialD();
 			if (mode > 1){
-				debugSerial.println("Invalid mode");
+				debugSerial.println("Invalid mode [0-1]");
 				mode = 1; // set to default
 			}
 			break;
 
 		case 'f':
 			Frequency = readSerialD();
+			if (Frequency < 8630 || Frequency > 8700 ){
+				debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
+				Frequency = 8683; // set to default
+			}
 			break;
 
 		case 'c': // set to confirmed
@@ -364,17 +368,25 @@ void readInput() {
 
 		case 'C':
 			chnEnabled = readSerialH();
+			if (chnEnabled == 0 || chnEnabled > 16 ){
+				debugSerial.println("Invalid channel mask [1-16]");
+				chnEnabled = 0xF; // set to default
+			}
 			break;
 
 		case 'p': // read tx power index
 			txPowerTst = (uint8_t)readSerialD();
+			if (txPowerTst == 0 || txPowerTst > 5 ){
+				debugSerial.println("Invalid power level [1-5]");
+				txPowerTst = 4; // set to default
+			}
 			break;
 
 
 		case 'l': // read data length
 			dataLen = (uint8_t)readSerialD();
-			if (dataLen > 250){
-				debugSerial.println("Invalid data length");
+			if (dataLen > 250 || dataLen == 0 ){
+				debugSerial.println("Invalid data length [1-250]");
 				dataLen = 1; // set to default
 			}
 			break;
@@ -382,7 +394,7 @@ void readInput() {
 		case 'd': // read data length
 			dataRate = (uint8_t)readSerialD();
 			if (dataRate > 5){ // we exclude 6 and 7 for now
-				debugSerial.println("Invalid data rate");
+				debugSerial.println("Invalid data rate [0-5]");
 				dataRate = 5; // set to default
 			}
 			break;
@@ -395,6 +407,7 @@ void readInput() {
 
 		case 'S': // stop test
 			testend = true;
+			debugSerial.println("Test stop!");
 			break;
 		}
 	}
