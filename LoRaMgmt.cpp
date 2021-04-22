@@ -14,6 +14,8 @@
 
 LoRaModem modem(loraSerial);
 
+#define freqPlan EU868
+
 // DevAddr, NwkSKey, AppSKey and the frequency plan
 static const char *devAddr = LORA_DEVADDR;
 static const char *nwkSKey = LORA_NWSKEY;
@@ -47,7 +49,7 @@ generatePayload(byte *payload){
 
 
 /*
- * LoRaMgmtSendConf: send a message with the defined mode
+ * LoRaMgmtSend: send a message with the defined mode
  *
  * Arguments: -
  *
@@ -59,8 +61,21 @@ int LoRaMgmtSend(){
 	return modem.endPacket(conf);
 }
 
+/*
+ * LoRaMgmtSendDumb: send a message with the defined mode
+ *
+ * Arguments: -
+ *
+ * Return:	  status of sending, >0 ok (no of bytes), <0 error
+ */
+int LoRaMgmtSendDumb(){
+	while (LoRa.beginPacket() == 0) {
+	  delay(1);
+	}
+	LoRa.write(genbuf, dataLen);
+	return LoRa.endPacket(true); // true = async / non-blocking mode
+}
 
-// TODO: check for POLL = send ok, ack signal? How does that work?
 /*
  * LoRaMgmtPoll: poll function for confirmed and delayed TX, check Receive
  *
@@ -141,7 +156,7 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
  */
 void LoRaMgmtSetup(){
 
-	if (!modem.begin(EU868)) {
+	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
 		while (1) {}
 	};
@@ -214,17 +229,19 @@ void LoRaSetGblParam(bool confirm, int datalen){
  * LoRaSetChannels:
  *
  * Arguments: - channel enable bit mask, 0 off, 1 on
+ * 			  - data rate min (ignored)
+ * 			  - data rate max
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaSetChannels(uint16_t chnMsk, uint8_t dr){
+int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
 
 	bool retVal = true;
 
 	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1)
 		if ((bool)chnMsk & 0x01) {
 			retVal &= modem.enableChannel((uint8_t)i);
-			retVal &= modem.dataRate(dr);
+			retVal &= modem.dataRate(drMax);
 		}
 		else
 			retVal &= modem.disableChannel((uint8_t)i);
