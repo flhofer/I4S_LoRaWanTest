@@ -160,6 +160,7 @@ enum testRun { 	rError = -1,
 				rStop,
 				rEvaluate,
 				rReset,
+				rDumb,
 				rEnd = 10
 			};
 
@@ -191,20 +192,18 @@ runTest(){
 		LoRaSetGblParam(confirmed, dataLen);
 
 		// Setup channels as configured
-		if (
-			(mode == 0
-				&& LoRaMgmtSetupDumb(Frequency) )
-			|| (mode == 1
-				&& LoRaSetChannels(chnEnabled, dataRate))	// set channels
-			|| (LoRaMgmtTxPwr(txPowerTst))) { 					// set power index;
+		if (LoRaMgmtTxPwr(txPowerTst)
+			|| (mode == 0 && LoRaMgmtSetupDumb(Frequency) )				// set frequency
+			|| (mode == 1 && LoRaSetChannels(chnEnabled, 0, dataRate)))	// set channels
+		{ 				// set power index;
 			tstate = rError;
-			break; // TODO: error
+			debugSerial.print(prtSttErrExec);
+			break;
 		}
 
-		tstate = rStart;
+		tstate = mode == 1 ? rStart : rDumb;
 		debugSerial.print(prtSttStart);
-		// fall-through
-		// @suppress("No break at end of case")
+		break;
 
 	case rStart:
 
@@ -319,6 +318,10 @@ runTest(){
 		tstate = rStart;
 		break;
 
+	case rDumb:
+		(void)LoRaMgmtSendDumb();
+		break;
+
 	default:
 	case rEnd:
 		if (!testend){
@@ -376,8 +379,8 @@ void readInput() {
 
 		case 'p': // read tx power index
 			txPowerTst = (uint8_t)readSerialD();
-			if (txPowerTst == 0 || txPowerTst > 5 ){
-				debugSerial.println("Invalid power level [1-5]");
+			if (txPowerTst > 5 ){
+				debugSerial.println("Invalid power level [0-5]");
 				txPowerTst = 4; // set to default
 			}
 			break;
