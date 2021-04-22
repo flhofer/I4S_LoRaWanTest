@@ -148,21 +148,36 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 }
 
 /*
+ * LoRaMgmtGetResultsDumb: getter for last experiment results
+ *
+ * Arguments: - pointer to Structure for the result data
+ *
+ * Return:	  - 0 if ok, <0 error
+ */
+int
+LoRaMgmtGetResultsDumb(sLoRaResutlsDumb_t * res){
+
+	return 0;
+}
+
+
+/*
  * LoRaMgmtSetup: setup LoRaWan communication with modem
  *
  * Arguments: -
  *
- * Return:	  -
+ * Return:	  returns 0 if successful, else -1
  */
-void LoRaMgmtSetup(){
+int LoRaMgmtSetup(){
 
 	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
-		while (1) {}
+		return -1;
 	};
 
-	modem.dutyCycle(false); // switch off the duty cycle
-	modem.setADR(true);		// enable ADR
+	int ret = 0;
+	ret |= !modem.dutyCycle(false); // switch off the duty cycle
+	ret |= !modem.setADR(true);		// enable ADR
 
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
@@ -173,15 +188,18 @@ void LoRaMgmtSetup(){
 	int connected = modem.joinABP(devAddr, nwkSKey, appSKey);
 	if (!connected) {
 		// Something went wrong; are you indoor? Move near a window and retry
-		while (1) {}
+		debugSerial.println("Netwwork join failed");
+		return -1;
 	}
 
 	// Set poll interval to 60 secs.
 	modem.minPollInterval(60);
 
 	// set to LorIoT standard RX, DR
-	modem.setRX2Freq(869525000);
-	modem.setRX2DR(0);
+	ret |= !modem.setRX2Freq(869525000);
+	ret |= !modem.setRX2DR(0);
+
+	return ret *-1;
 }
 
 /*
@@ -202,6 +220,7 @@ int LoRaMgmtSetupDumb(long FRQ){
 		return 1;
 	}
 
+	LoRa.setTxPower(14, 0); // MAX RFO level
 	return 0;
 }
 

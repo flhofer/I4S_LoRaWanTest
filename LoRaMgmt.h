@@ -15,7 +15,7 @@
 #define MAXLORALEN	51			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
 #define LORACHNMAX 16
 
-void LoRaMgmtSetup();
+int LoRaMgmtSetup();
 int LoRaMgmtSetupDumb(long FRQ);
 void LoRaSetGblParam(bool confirm, int datalen);
 
@@ -29,6 +29,7 @@ int LoRaMgmtRcnf();
 int LoRaMgmtTxPwr(uint8_t txPwr);
 
 int LoRaMgmtGetResults(sLoRaResutls_t * res);
+int LoRaMgmtGetResultsDumb(sLoRaResutlsDumb_t * res);
 
 
 #endif /* LORAMGMT_H_ */
