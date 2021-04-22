@@ -9,12 +9,7 @@
 #include "Arduino.h"
 //add your includes for the project LoRaWanTest here
 
-#ifndef SerialLoRa
-	#define SerialLoRa Serial1
-	#define LORA_RESET 1
-	#define LORA_BOOT0 2
-	#define LORA_IRQ_DUMB 3
-#endif
+#define LORA_DEBUG debugSerial
 
 //end of add your includes here
 #define debugSerial SerialUSB		// USB Serial
