@@ -98,6 +98,12 @@ printTestResults(){
 	}
 }
 
+static void
+printTestResultsDumb(){
+
+
+}
+
 uint16_t readSerialH(){
 	char nChar;
 	uint16_t retVal = 0;
@@ -191,17 +197,31 @@ runTest(){
 		// Set global test parameters
 		LoRaSetGblParam(confirmed, dataLen);
 
-		// Setup channels as configured
-		if (LoRaMgmtTxPwr(txPowerTst)
-			|| (mode == 0 && LoRaMgmtSetupDumb(Frequency) )				// set frequency
-			|| (mode == 1 && LoRaSetChannels(chnEnabled, 0, dataRate)))	// set channels
-		{ 				// set power index;
+		switch (mode)
+		{
+		default:
+		case 0 : // dumb LoRa
+			ret |= LoRaMgmtSetupDumb(Frequency);	// set frequency
+			tstate = rDumb;
+			break;
+
+		case 1 : // LoRaWan
+			LoRaMgmtSetup();
+			ret |= LoRaSetChannels(chnEnabled, 0, dataRate);	// set channels
+			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
+			tstate = rStart;
+			break;
+		// placeholder future modes.. test ecc
+		}
+
+		// Did an error occur?
+		if (ret)
+		{
 			tstate = rError;
 			debugSerial.print(prtSttErrExec);
 			break;
 		}
 
-		tstate = mode == 1 ? rStart : rDumb;
 		debugSerial.print(prtSttStart);
 		break;
 
@@ -411,6 +431,8 @@ void readInput() {
 		case 'S': // stop test
 			testend = true;
 			debugSerial.println("Test stop!");
+			if (mode==0)
+				printTestResultsDumb();
 			break;
 		}
 	}
@@ -436,8 +458,6 @@ void setup()
 	REG_PORT_OUTSET0 = LEDBUILDIN;
 	delay(500);
 	REG_PORT_OUTCLR0 = LEDBUILDIN;
-
-	LoRaMgmtSetup();
 
 	debugSerial.print(prtSttSelect);
 	debugSerial.flush();
