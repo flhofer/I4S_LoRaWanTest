@@ -29,7 +29,5 @@ int LoRaMgmtRcnf();
 int LoRaMgmtTxPwr(uint8_t txPwr);
 
 int LoRaMgmtGetResults(sLoRaResutls_t * res);
-int LoRaMgmtGetResultsDumb(sLoRaResutlsDumb_t * res);
-
 
 #endif /* LORAMGMT_H_ */

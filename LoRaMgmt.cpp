@@ -148,20 +148,6 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 }
 
 /*
- * LoRaMgmtGetResultsDumb: getter for last experiment results
- *
- * Arguments: - pointer to Structure for the result data
- *
- * Return:	  - 0 if ok, <0 error
- */
-int
-LoRaMgmtGetResultsDumb(sLoRaResutlsDumb_t * res){
-
-	return 0;
-}
-
-
-/*
  * LoRaMgmtSetup: setup LoRaWan communication with modem
  *
  * Arguments: -
@@ -219,6 +205,11 @@ int LoRaMgmtSetupDumb(long FRQ){
 		Serial.println("Starting LoRa failed!");
 		return 1;
 	}
+
+	// TODO: defaults for now
+	LoRa.setSpreadingFactor(12);
+	LoRa.setSignalBandwidth(125000);
+	LoRa.setCodingRate4(8);
 
 	LoRa.setTxPower(14, 0); // MAX RFO level
 	return 0;

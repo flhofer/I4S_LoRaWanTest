@@ -48,6 +48,8 @@ static uint8_t actChan = 16;					// active channels
 // Generic Settings
 static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
 static long Frequency = 8683;					// Frequency of dumb LoRa mode *100 in kHz
+static long txCnt;								// transmission counter
+static long durationTest;						// test duration in ms
 
 // LoRaWan settings
 static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
@@ -97,15 +99,12 @@ printTestResults(){
 
 static void
 printTestResultsDumb(){
-	sLoRaResutlsDumb_t res;
-	LoRaMgmtGetResultsDumb(&res);
-
 	// for printing
 	char buf[128];
 
 	debugSerial.print(prtSttResults);
 	sprintf(buf, "%07lu;%07lu;%lu;",
-			res.timeTx, res.cntTx, res.txFrq);
+			durationTest, txCnt, Frequency*100);
 	debugSerial.println(buf);
 }
 
@@ -212,6 +211,8 @@ runTest(){
 		default:
 		case 0 : // dumb LoRa
 			ret |= LoRaMgmtSetupDumb(Frequency);	// set frequency
+
+			txCnt = 0;
 			tstate = rDumb;
 			break;
 
@@ -236,6 +237,7 @@ runTest(){
 		}
 
 		debugSerial.print(prtSttStart);
+		startTs = millis();
 		break;
 
 	/*
@@ -244,8 +246,11 @@ runTest(){
 
 	case rDumb:
 		(void)LoRaMgmtSendDumb();
-		if (testReq >= qStop )
+		txCnt++;
+		if (testReq >= qStop ){
 			tstate = rPrint;
+			durationTest = millis() - startTs;
+		}
 		break;
 
 	/*
@@ -473,7 +478,6 @@ void readInput() {
 
 		case 'R': // set to run
 			testReq = qRun;
-			startTs = millis();
 			tstate = rInit;
 			break;
 

@@ -35,12 +35,6 @@ typedef struct sLoRaResutls {
 	uint8_t rxSnr;			// last rx SNR, default -128
 } sLoRaResutls_t;
 
-typedef struct sLoRaResutlsDumb {
-	uint32_t timeTx;
-	uint32_t cntTx;
-	uint32_t txFrq;			// current used frequency
-} sLoRaResutlsDumb_t;
-
 //global variable declarations
 extern int debug;				// Global flag Debug console attached (PC)
 
