@@ -166,20 +166,19 @@ static unsigned long startTs = 0; // loop timer
 // Enumeration for test status
 typedef enum { 	rError = -1,
 				rInit = 0,
+				rDumb,
 				rStart,
 				rRun,
 				rStop,
 				rEvaluate,
 				rReset,
-				rDumb,
 				rPrint,
 				rEnd = 10
 			} testRun_t;
 
 typedef enum {	qIdle = 0,
 				qRun,
-				qStop,
-				qEnd
+				qStop
 			} testReq_t;
 
 static testRun_t tstate = rInit;// test run status
@@ -199,13 +198,11 @@ runTest(){
 
 	int failed = 0;
 	int ret = 0;
+
 	switch(tstate){
 
 	case rInit:
 
-		// reset status on next test
-		memset(testResults,0, sizeof(testResults));
-		trn = &testResults[0];	// Init results pointer
 
 		// Set global test parameters
 		LoRaSetGblParam(confirmed, dataLen);
@@ -219,6 +216,10 @@ runTest(){
 			break;
 
 		case 1 : // LoRaWan
+			// reset status on next test
+			memset(testResults,0, sizeof(testResults));
+			trn = &testResults[0];	// Init results pointer
+
 			LoRaMgmtSetup();
 			ret |= LoRaSetChannels(chnEnabled, 0, dataRate);	// set channels
 			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
@@ -227,7 +228,6 @@ runTest(){
 		// placeholder future modes.. test ecc
 		}
 
-		// Did an error occur?
 		if (ret)
 		{
 			tstate = rError;
@@ -237,6 +237,20 @@ runTest(){
 
 		debugSerial.print(prtSttStart);
 		break;
+
+	/*
+	 * Dumb Modem States
+	 */
+
+	case rDumb:
+		(void)LoRaMgmtSendDumb();
+		if (testReq >= qStop )
+			tstate = rPrint;
+		break;
+
+	/*
+	 * LoRaWan execution states
+	 */
 
 	case rStart:
 
@@ -350,40 +364,32 @@ runTest(){
 		tstate = rStart;
 		break;
 
-	case rDumb:
-		(void)LoRaMgmtSendDumb();
-		if (testReq >= qStop )
-			tstate = rPrint;
-		break;
+	/*
+	 * Common states ending
+	 */
 
 	case rPrint:
 		switch (mode){
+		default:
 		case 0:
 			printTestResultsDumb();
 			break;
 
-		default:
 		case 1:
 			printTestResults();
 			break;
 		}
-		testReq = qEnd;
 		tstate = rEnd;
 		// fall-through
 		// @suppress("No break at end of case")
 
 	default:
 	case rEnd:
-		if (testReq <= qStop){
+		if (testReq != qIdle){
 			debugSerial.print(prtSttDone);
 			debugSerial.print(prtSttSelect);
+			testReq = qIdle;
 		}
-		testReq = qIdle;
-	}
-
-	if (-1 == ret && (rStart != tstate) && (rRun != tstate) ){
-		debugSerial.print(prtSttErrExec);
-		tstate = rEnd;
 	}
 
 	return tstate;
