@@ -3,7 +3,6 @@
 #include "LoRaMgmt.h"			// LoRaWan modem management
 
 #define UNCF_POLL	5			// How many times to poll
-#define TST_RETRY	5			// How many times retry to send message
 #define TST_MXRSLT	30			// What's the max number of test results we allow?
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
 #define LEDBUILDIN	PORT_PA20	// MKRWan1300 build in led position
@@ -45,9 +44,6 @@ const char prtTblTms[] PROGMEM = " ms";
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
 static sLoRaResutls_t * trn;					// Pointer to actual entry
 static uint8_t actChan = 16;					// active channels
-static char prntGrp;							// Actual executing group
-static int prntTno;								// actual executing testno
-static int testend = 1;							// is test terminated?
 
 // Generic Settings
 static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
@@ -59,6 +55,7 @@ static uint16_t chnEnabled = 0xF;				// Channels enabled mask for LoRaWan mode t
 static uint8_t txPowerTst = 4;					// txPower setting for the low power test
 static uint8_t dataLen = 1;						// data length to send over LoRa for a test
 static uint8_t dataRate = 5;					// data rate starting value
+static uint8_t repeatSend = 5;					// number of send repeats
 
 /* 	Globals		*/
 
@@ -90,8 +87,8 @@ printTestResults(){
 
 	debugSerial.print(prtSttResults);
 	for (int i = 1; i<= TST_MXRSLT; i++, trn++){
-		sprintf(buf, "%c;%02d;%02d;%07lu;%07lu;0x%02X;%lu;%02u;%02d;%03d;%03d",
-				prntGrp, prntTno, i, trn->timeTx, trn->timeRx,
+		sprintf(buf, "%02d;%07lu;%07lu;0x%02X;%lu;%02u;%02d;%03d;%03d",
+				i, trn->timeTx, trn->timeRx,
 				trn->chnMsk, trn->txFrq, trn->txDR, trn->txPwr,
 				trn->rxRssi, trn->rxSnr);
 		debugSerial.println(buf);
@@ -100,8 +97,16 @@ printTestResults(){
 
 static void
 printTestResultsDumb(){
+	sLoRaResutlsDumb_t res;
+	LoRaMgmtGetResultsDumb(&res);
 
+	// for printing
+	char buf[128];
 
+	debugSerial.print(prtSttResults);
+	sprintf(buf, "%07lu;%07lu;%lu;",
+			res.timeTx, res.cntTx, res.txFrq);
+	debugSerial.println(buf);
 }
 
 uint16_t readSerialH(){
@@ -159,7 +164,7 @@ uint16_t readSerialD(){
 static unsigned long startTs = 0; // loop timer
 
 // Enumeration for test status
-enum testRun { 	rError = -1,
+typedef enum { 	rError = -1,
 				rInit = 0,
 				rStart,
 				rRun,
@@ -167,10 +172,18 @@ enum testRun { 	rError = -1,
 				rEvaluate,
 				rReset,
 				rDumb,
+				rPrint,
 				rEnd = 10
-			};
+			} testRun_t;
 
-static enum testRun tstate = rInit;
+typedef enum {	qIdle = 0,
+				qRun,
+				qStop,
+				qEnd
+			} testReq_t;
+
+static testRun_t tstate = rInit;// test run status
+static testReq_t testReq= qIdle;// test request status
 static int	pollcnt;			// un-conf poll retries
 static int	retries; 			// un-conf send retries
 
@@ -181,7 +194,7 @@ static int	retries; 			// un-conf send retries
  *
  * Return:	  - test run enumeration status
  */
-static enum testRun
+static testRun_t
 runTest(){
 
 	int failed = 0;
@@ -272,7 +285,7 @@ runTest(){
 	case rStop:
 
 		// unsuccessful and retries left?
-		if (failed && (TST_RETRY > retries)){
+		if (failed && (repeatSend > retries)){
 			tstate = rStart;
 			debugSerial.print(prtSttRetry);
 			delay(RESFREEDEL/actChan); // delay for modem resource free
@@ -321,7 +334,6 @@ runTest(){
 		// End of tests?
 		if (trn >= &testResults[TST_MXRSLT-1]){
 			debugSerial.print(prtSttEnd);
-			printTestResults();
 			tstate = rEnd;
 			break;
 		}
@@ -340,15 +352,33 @@ runTest(){
 
 	case rDumb:
 		(void)LoRaMgmtSendDumb();
+		if (testReq >= qStop )
+			tstate = rPrint;
 		break;
+
+	case rPrint:
+		switch (mode){
+		case 0:
+			printTestResultsDumb();
+			break;
+
+		default:
+		case 1:
+			printTestResults();
+			break;
+		}
+		testReq = qEnd;
+		tstate = rEnd;
+		// fall-through
+		// @suppress("No break at end of case")
 
 	default:
 	case rEnd:
-		if (!testend){
+		if (testReq <= qStop){
 			debugSerial.print(prtSttDone);
 			debugSerial.print(prtSttSelect);
 		}
-		testend = 1;
+		testReq = qIdle;
 	}
 
 	if (-1 == ret && (rStart != tstate) && (rRun != tstate) ){
@@ -422,21 +452,28 @@ void readInput() {
 			}
 			break;
 
+		case 'r': // read repeat count for LoRaWan packets
+			repeatSend = (uint8_t)readSerialD();
+			if (repeatSend == 0 || repeatSend > TST_MXRSLT){
+				debugSerial.print("Invalid repeat count [1-"); // TODO: simplify
+				debugSerial.print(TST_MXRSLT);
+				debugSerial.println("]");
+				repeatSend = 5; // set to default
+			}
+			break;
+
 		case 'R': // set to run
-			testend = false;
+			testReq = qRun;
 			startTs = millis();
 			tstate = rInit;
 			break;
 
 		case 'S': // stop test
-			testend = true;
+			testReq = max(qStop, testReq);
 			debugSerial.println("Test stop!");
-			if (mode==0)
-				printTestResultsDumb();
 			break;
-		}
+
 		case 'T': // Print type of micro-controller
-			testend = true;
 			debugSerial.println(MICROVER);
 			break;
 		}
@@ -472,7 +509,7 @@ void setup()
 // The loop function is called in an endless loop
 void loop()
 {
-	if (testend)
+	if (testReq == qIdle)
 		readInput();
 	else{
 		runTest();
