@@ -319,31 +319,34 @@ runTest(){
 		// pgm_read_word = read char pointer address from PROGMEM pos PRTTBLCR of the string array
 		// strcpy_P = copy char[] from PRROGMEM at that address of PRROGMEM to buf
 		// *.print = print that char to serial
-		debugSerial.print(prtTblCR);
-		debugSerial.print(trn->lastCR);
-		debugSerial.print(prtTblDR);
-		debugSerial.print(trn->txDR);
-		debugSerial.print(prtTblChnMsk);
-		debugSerial.println(trn->chnMsk);
-		debugSerial.print(prtTblFrq);
-		debugSerial.print(trn->txFrq);
-		debugSerial.print(prtTblPwr);
-		debugSerial.print(trn->txPwr);
-		debugSerial.print(prtTblRssi);
-		debugSerial.print(trn->rxRssi);
-		debugSerial.print(prtTblSnr);
-		debugSerial.println(trn->rxSnr);
 
-		debugSerial.print(prtTblTTx);
-		printScaled(trn->timeTx);
-		debugSerial.print(prtTblTms);
-		debugSerial.print(prtTblTRx);
-		printScaled(trn->timeRx);
-		debugSerial.print(prtTblTms);
-		debugSerial.print(prtTblTTl);
-		printScaled(trn->timeToRx);
-		debugSerial.print(prtTblTms);
-		debugSerial.println();
+		if (debug) {
+			debugSerial.print(prtTblCR);
+			debugSerial.print(trn->lastCR);
+			debugSerial.print(prtTblDR);
+			debugSerial.print(trn->txDR);
+			debugSerial.print(prtTblChnMsk);
+			debugSerial.println(trn->chnMsk);
+			debugSerial.print(prtTblFrq);
+			debugSerial.print(trn->txFrq);
+			debugSerial.print(prtTblPwr);
+			debugSerial.print(trn->txPwr);
+			debugSerial.print(prtTblRssi);
+			debugSerial.print(trn->rxRssi);
+			debugSerial.print(prtTblSnr);
+			debugSerial.println(trn->rxSnr);
+
+			debugSerial.print(prtTblTTx);
+			printScaled(trn->timeTx);
+			debugSerial.print(prtTblTms);
+			debugSerial.print(prtTblTRx);
+			printScaled(trn->timeRx);
+			debugSerial.print(prtTblTms);
+			debugSerial.print(prtTblTTl);
+			printScaled(trn->timeToRx);
+			debugSerial.print(prtTblTms);
+			debugSerial.println();
+		}
 
 		// End of tests?
 		if (trn >= &testResults[TST_MXRSLT-1]){
@@ -481,6 +484,10 @@ void readInput() {
 
 		case 'T': // Print type of micro-controller
 			debugSerial.println(MICROVER);
+			break;
+
+		case 'n': // disable debug print
+			debug = 0;
 			break;
 		}
 	}
