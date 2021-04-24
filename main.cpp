@@ -51,7 +51,7 @@ static int testend = 1;							// is test terminated?
 
 // Generic Settings
 static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
-static long Frequency = 8683;					// Frequency of dumb lora mode
+static long Frequency = 8683;					// Frequency of dumb LoRa mode *100 in kHz
 
 // LoRaWan settings
 static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
@@ -433,6 +433,11 @@ void readInput() {
 			debugSerial.println("Test stop!");
 			if (mode==0)
 				printTestResultsDumb();
+			break;
+		}
+		case 'T': // Print type of micro-controller
+			testend = true;
+			debugSerial.println(MICROVER);
 			break;
 		}
 	}
