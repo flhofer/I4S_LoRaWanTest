@@ -47,7 +47,7 @@ static uint8_t actChan = 16;					// active channels
 
 // Generic Settings
 static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
-static long Frequency = 8683;					// Frequency of dumb LoRa mode *100 in kHz
+static long Frequency = 8683000;				// Frequency of dumb LoRa mode *100 in kHz
 static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
 
@@ -419,10 +419,10 @@ void readInput() {
 			break;
 
 		case 'f':
-			Frequency = readSerialD();
+			Frequency = (long)readSerialD() * 100000;
 			if (Frequency < 8630 || Frequency > 8700 ){
 				debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
-				Frequency = 8683; // set to default
+				Frequency = 868300000; // set to default
 			}
 			break;
 

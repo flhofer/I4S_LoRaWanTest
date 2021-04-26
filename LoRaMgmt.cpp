@@ -202,7 +202,7 @@ int LoRaMgmtSetupDumb(long FRQ){
 	// Configure LoRa module to transmit and receive at 915MHz (915*10^6)
 	// Replace 915E6 with the frequency you need (eg. 433E6 for 433MHz)
 	if (!LoRa.begin(FRQ)) {
-		Serial.println("Starting LoRa failed!");
+		debugSerial.println("Starting LoRa failed!");
 		return 1;
 	}
 
@@ -211,7 +211,7 @@ int LoRaMgmtSetupDumb(long FRQ){
 	LoRa.setSignalBandwidth(125000);
 	LoRa.setCodingRate4(8);
 
-	LoRa.setTxPower(14, 0); // MAX RFO level
+	LoRa.setTxPower(14, PA_OUTPUT_RFO_PIN); // MAX RFO level
 	return 0;
 }
 
