@@ -17,7 +17,7 @@
 
 int LoRaMgmtSetup();
 int LoRaMgmtSetupDumb(long FRQ);
-void LoRaSetGblParam(bool confirm, int datalen);
+void LoRaSetGblParam(bool confirm, int datalen, int OTAA);
 
 int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax);
 

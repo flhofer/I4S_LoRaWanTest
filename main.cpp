@@ -52,7 +52,8 @@ static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
 
 // LoRaWan settings
-static bool confirmed = true;					// TODO: implement menu and switch, BUT should it be changed?
+static bool confirmed = true;					// confirmed messaging?
+static bool otaa = false;						// use OTAA join instead of ABP
 static uint16_t chnEnabled = 0xF;				// Channels enabled mask for LoRaWan mode tests
 static uint8_t txPowerTst = 4;					// txPower setting for the low power test
 static uint8_t dataLen = 1;						// data length to send over LoRa for a test
@@ -204,7 +205,7 @@ runTest(){
 
 
 		// Set global test parameters
-		LoRaSetGblParam(confirmed, dataLen);
+		LoRaSetGblParam(confirmed, dataLen, otaa);
 
 		switch (mode)
 		{
@@ -432,6 +433,13 @@ void readInput() {
 			break;
 		case 'u': // set to unconfirmed
 			confirmed = false;
+			break;
+
+		case 'o': // set to otaa
+			otaa = true;
+			break;
+		case 'a': // set to abp
+			otaa = false;
 			break;
 
 		case 'C':

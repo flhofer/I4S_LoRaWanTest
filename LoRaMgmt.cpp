@@ -22,6 +22,7 @@ static const char *nwkSKey = LORA_NWSKEY;
 static const char *appSKey = LORA_APSKEY;
 
 static bool conf = false;			// use confirmed messages
+static bool otaa = false;			// use otaa join
 static int dataLen = 1; 			// TX data length for tests
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 
@@ -177,8 +178,11 @@ int LoRaMgmtSetup(){
 	debugSerial.println(modem.deviceEUI());
 
 	debugSerial.println("-- PERSONALIZE");
-//	int connected = modem.joinABP(devAddr, nwkSKey, appSKey);
-	int connected = modem.joinOTAA(appEui, appKey);
+	int connected;
+	if (otaa)
+		connected = modem.joinOTAA(appEui, appKey);
+	else
+		connected = modem.joinABP(devAddr, nwkSKey, appSKey);
 	if (!connected) {
 		// Something went wrong; are you indoor? Move near a window and retry
 		debugSerial.println("Network join failed");
@@ -227,11 +231,13 @@ int LoRaMgmtSetupDumb(long FRQ){
  *
  * Arguments: - confirmed send yes/no
  * 			  - simulated payload length
+ * 			  - Use OTAA?
  *
  * Return:	  -
  */
-void LoRaSetGblParam(bool confirm, int datalen){
+void LoRaSetGblParam(bool confirm, int datalen, int OTAA){
 	conf = confirm;
+	otaa = (OTAA);
 	// set boundaries for len value
 	dataLen = max(min(datalen, MAXLORALEN), 1);
 
