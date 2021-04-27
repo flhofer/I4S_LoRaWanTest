@@ -118,7 +118,7 @@ static int
 LoRaGetChannels(uint16_t * chnMsk){
 
 	*chnMsk = 0;
-
+	// TODO: use getchannelmask (string) instead of bit by bit
 	for (int i=0; i<LORACHNMAX; i++)
 	  *chnMsk |= (uint16_t)modem.isChannelEnabled((uint8_t)i) << i;
 
@@ -147,6 +147,9 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 	return 0;
 }
 
+#define SECRET_APP_EUI "BE010000000000DF"
+#define SECRET_APP_KEY "9ADE44A4AEF1CD77AEB44387BD976928"
+
 /*
  * LoRaMgmtSetup: setup LoRaWan communication with modem
  *
@@ -161,6 +164,9 @@ int LoRaMgmtSetup(){
 		return -1;
 	};
 
+	String appEui = SECRET_APP_EUI;
+	String appKey = SECRET_APP_KEY;
+
 	int ret = 0;
 	ret |= !modem.dutyCycle(false); // switch off the duty cycle
 	ret |= !modem.setADR(true);		// enable ADR
@@ -171,10 +177,11 @@ int LoRaMgmtSetup(){
 	debugSerial.println(modem.deviceEUI());
 
 	debugSerial.println("-- PERSONALIZE");
-	int connected = modem.joinABP(devAddr, nwkSKey, appSKey);
+//	int connected = modem.joinABP(devAddr, nwkSKey, appSKey);
+	int connected = modem.joinOTAA(appEui, appKey);
 	if (!connected) {
 		// Something went wrong; are you indoor? Move near a window and retry
-		debugSerial.println("Netwwork join failed");
+		debugSerial.println("Network join failed");
 		return -1;
 	}
 
@@ -282,7 +289,7 @@ int LoRaMgmtUpdt(){
  */
 int LoRaMgmtRcnf(){
 	if (conf)
-		return modem.restart() ? 0 : -1;\
+		return modem.restart() ? 0 : -1;
 	return 0;
 }
 

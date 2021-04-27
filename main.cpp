@@ -223,7 +223,8 @@ runTest(){
 
 			LoRaMgmtSetup();
 			ret |= LoRaSetChannels(chnEnabled, 0, dataRate);	// set channels
-			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
+//			ret |=
+					LoRaMgmtTxPwr(txPowerTst);	// set power index;
 			tstate = rStart;
 			break;
 		// placeholder future modes.. test ecc
