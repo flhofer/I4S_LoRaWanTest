@@ -20,6 +20,8 @@ LoRaModem modem(loraSerial);
 static const char *devAddr = LORA_DEVADDR;
 static const char *nwkSKey = LORA_NWSKEY;
 static const char *appSKey = LORA_APSKEY;
+static const char *appEui  = LORA_APPEUI;
+static const char *appKey  = LORA_APPKEY;
 
 static bool conf = false;			// use confirmed messages
 static bool otaa = false;			// use otaa join
@@ -148,9 +150,6 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 	return 0;
 }
 
-#define SECRET_APP_EUI "BE010000000000DF"
-#define SECRET_APP_KEY "9ADE44A4AEF1CD77AEB44387BD976928"
-
 /*
  * LoRaMgmtSetup: setup LoRaWan communication with modem
  *
@@ -164,9 +163,6 @@ int LoRaMgmtSetup(){
 		debugSerial.println("Failed to start module");
 		return -1;
 	};
-
-	String appEui = SECRET_APP_EUI;
-	String appKey = SECRET_APP_KEY;
 
 	int ret = 0;
 	ret |= !modem.dutyCycle(false); // switch off the duty cycle
