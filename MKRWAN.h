@@ -906,21 +906,21 @@ public:
   }
 
   int32_t getRSSI() {
-    int32_t fcd = -1;
+    int32_t rssi = -1;
     sendAT(GF("+RSSI?"));
     if (waitResponse("+OK=") == 1) {
-        fcd = stream.readStringUntil('\r').toInt();
+        rssi = stream.readStringUntil('\r').toInt();
     }
-    return fcd;
+    return rssi;
   }
 
   int32_t getSNR() {
-    int32_t fcd = -1;
+    int32_t snr = -1;
     sendAT(GF("+SNR?"));
     if (waitResponse("+OK=") == 1) {
-        fcd = stream.readStringUntil('\r').toInt();
+        snr = stream.readStringUntil('\r').toInt();
     }
-    return fcd;
+    return snr;
   }
 
 private:
