@@ -470,13 +470,13 @@ public:
   }
 
   bool configureBand(_lora_band band) {
-    sendAT(GF("+BAND="), band);
-    if (waitResponse() != 1) {
+    if (setValue(GF("+BAND="), band)) {
         return false;
     }
     if (band == EU868 && isArduinoFW()) {
         return dutyCycle(true);
     }
+
     return true;
   }
 
@@ -506,7 +506,8 @@ public:
   String getChannelMask() {
     int size = 4*getChannelMaskSize(region);
     sendAT(GF("+CHANMASK?"));
-    if (waitResponse() == 1) {
+	if ((!compat_mode && waitResponse(GF("+CHANMASK?")) == 1)
+			|| (compat_mode && waitResponse() == 1)) {
         channel_mask_str = stream.readStringUntil('\r');
         DBG("Full channel mask string: ", channel_mask_str);
         sscanf(channel_mask_str.c_str(), "%04hx%04hx%04hx%04hx%04hx%04hx", &channelsMask[0], &channelsMask[1], &channelsMask[2],
@@ -617,14 +618,9 @@ public:
   }
 
   String version() {
-    sendAT(GF("+DEV?"));
-    if (waitResponse() == 1) {
-        fw_version = stream.readStringUntil('\r');
-    }
-    sendAT(GF("+VER?"));
-    if (waitResponse() == 1) {
-        fw_version += " " + stream.readStringUntil('\r');
-    }
+    fw_version = getStringValue(GF("+DEV?"))
+    		+ " "
+    		+ getStringValue(GF("+VER?"));
 
     return fw_version;
   }
@@ -675,8 +671,9 @@ public:
   }
 
   bool power(_rf_mode mode, uint8_t transmitPower) { // transmitPower can be between 0 and 5
-    sendAT(GF("+RFPOWER="), mode,",",transmitPower);
-    if (waitResponse() != 1)
+	sendAT(GF("+RFPOWER"), mode,",",transmitPower);
+	if ((!compat_mode && waitResponse(GF("+RFPOWER")) == 1)
+			|| (compat_mode && waitResponse() == 1))
       return false;
     String resp = stream.readStringUntil('\r');
     return true;
@@ -837,33 +834,22 @@ private:
   bool set(_lora_property prop, const char* value) {
     switch (prop) {
         case APP_EUI:
-            sendAT(GF("+APPEUI="), value);
-            break;
+        	return setValue(GF("+APPEUI="), value);
         case APP_KEY:
-            sendAT(GF("+APPKEY="), value);
-            break;
+        	return setValue(GF("+APPKEY="), value);
         case DEV_EUI:
-            sendAT(GF("+DEVEUI="), value);
-            break;
+        	return setValue(GF("+DEVEUI="), value);
         case DEV_ADDR:
-            sendAT(GF("+DEVADDR="), value);
-            break;
+        	return setValue(GF("+DEVADDR="), value);
         case NWKS_KEY:
-            sendAT(GF("+NWKSKEY="), value);
-            break;
+        	return setValue(GF("+NWKSKEY="), value);
         case NWK_ID:
-            sendAT(GF("+IDNWK="), value);
-            break;
+            return setValue(GF("+IDNWK="), value);
         case APPS_KEY:
-            sendAT(GF("+APPSKEY="), value);
-            break;
+        	return setValue(GF("+APPSKEY="), value);
         default:
             return false;
     }
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
   }
 
   /**
@@ -913,11 +899,9 @@ private:
     if (isArduinoFW()) {
       return 64;
     }
-    sendAT(GF("+MSIZE?"));
-    if (waitResponse(2000L, "+OK=") != 1) {
-      return 0;
-    }
-    return stream.readStringUntil('\r').toInt();
+
+    int size = getIntValue(GF("+MSIZE?"));
+    return (size < 0) ? 0 : (size_t)size;
   }
 
   bool getJoinStatus() {
