@@ -1034,10 +1034,9 @@ private:
       return 64;
     }
     sendAT(GF("+MSIZE?"));
-    if (waitResponse(2000L) != 1) {
+    if (waitResponse(2000L, "+OK=") != 1) {
       return 0;
     }
-    streamSkipUntil('=');
     return stream.readStringUntil('\r').toInt();
   }
 
@@ -1148,10 +1147,10 @@ private:
           goto finish;
         } else if (data.equals("+RECV=")) {
           data = "";
-          stream.readStringUntil(',').toInt();
+          (void)stream.readStringUntil(',').toInt();
           length = stream.readStringUntil('\r').toInt();
-          streamSkipUntil('\n');
-          streamSkipUntil('\n');
+          (void)streamSkipUntil('\n');
+          (void)streamSkipUntil('\n');
           for (int i = 0; i < length;) {
             if (stream.available()) {
                 rx.put(stream.read());
