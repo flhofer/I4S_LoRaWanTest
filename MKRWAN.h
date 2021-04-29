@@ -822,12 +822,9 @@ private:
 
   bool join(uint32_t timeout) {
     sendAT(GF("+JOIN"));
-    sendAT();
     if (waitResponse(timeout, "+EVENT=1,1") != 1) {
       return false;
     }
-    // Second answer, always returns an additional +OK on new firmware versions for ABP
-    (void)streamSkipUntil('\r');
     return true;
   }
 
