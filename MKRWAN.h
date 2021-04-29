@@ -1188,4 +1188,22 @@ finish:
     return waitResponse(1000, r1, r2, r3, r4, r5, r6, r7, r8);
   }
 
+  String getStringValue(ConstStr cmd){
+	String value;
+	sendAT(cmd);
+	if (waitResponse("+OK=") == 1) {
+		value = stream.readStringUntil('\r');
+	}
+	return value;
+  }
+
+  int32_t getIntValue(ConstStr cmd){
+	int32_t value = -1;
+	sendAT(cmd);
+	if (waitResponse("+OK=") == 1) {
+		value = stream.readStringUntil('\r').toInt();
+	}
+	return value;
+  }
+
 };
