@@ -463,11 +463,7 @@ public:
   }
 
   bool configureClass(_lora_class _class) {
-    sendAT(GF("+CLASS="), (char)_class);
-    if (waitResponse() != 1) {
-        return false;
-    }
-    return true;
+    return setValue(GF("+CLASS="), (char)_class);
   }
 
   bool configureBand(_lora_band band) {
@@ -598,12 +594,7 @@ public:
   }
 
   bool sendMask(String newMask) {
-    sendAT(GF("+CHANMASK="), newMask);
-    if (waitResponse() != 1) {
-        return false;
-    }
-
-    return true;
+    return setValue(GF("+CHANMASK="), newMask);
   }
 
   void setBaud(unsigned long baud) {
@@ -636,12 +627,7 @@ public:
   }
 
   String deviceEUI() {
-    String eui;
-    sendAT(GF("+DEVEUI?"));
-    if (waitResponse("+OK=") == 1) {
-        eui = stream.readStringUntil('\r');
-    }
-    return eui;
+    return getStringValue(GF("+DEVEUI?"));
   }
 
   void maintain() {
@@ -687,21 +673,14 @@ public:
 
   bool power(_rf_mode mode, uint8_t transmitPower) { // transmitPower can be between 0 and 5
     sendAT(GF("+RFPOWER="), mode,",",transmitPower);
-    if (waitResponse() != 1) {
+    if (waitResponse() != 1)
       return false;
-    } else {
-        String resp = stream.readStringUntil('\r');
-    }
+    String resp = stream.readStringUntil('\r');
     return true;
   }
 
   int32_t getPower() {
-    int32_t fcd = -1;
-    sendAT(GF("+RFPOWER?"));
-    if (waitResponse("+OK=") == 1) {
-        fcd = stream.readStringUntil('\r').toInt();
-    }
-    return fcd;
+    return getIntValue(GF("+RFPOWER?"));
   }
 
 #ifdef SerialLoRa
@@ -728,43 +707,23 @@ public:
 #endif
 
   bool dutyCycle(bool on) {
-    sendAT(GF("+DUTYCYCLE="), on);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+DUTYCYCLE="), on);
   }
 
   bool setPort(uint8_t port) {
-    sendAT(GF("+PORT="), port);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+PORT="), port);
   }
 
   bool publicNetwork(bool publicNetwork) {
-    sendAT(GF("+NWK="), publicNetwork);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+NWK="), publicNetwork);
   }
 
   bool sleep(bool on = true) {
-    sendAT(GF("+SLEEP="), on);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+SLEEP="), on);
   }
 
   bool format(bool hexMode) {
-    sendAT(GF("+DFORMAT="), hexMode);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+DFORMAT="), hexMode);
   }
 
 /*
@@ -779,150 +738,71 @@ public:
 */
 
   bool dataRate(uint8_t dr) {
-    sendAT(GF("+DR="), dr);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+DR="), dr);
   }
 
   int getDataRate() {
-    int dr = -1;
-    sendAT(GF("+DR?"));
-    if (waitResponse("+OK=") == 1) {
-        dr = stream.readStringUntil('\r').toInt();
-    }
-    return dr;
+    return (int)getIntValue(GF("+DR?"));
   }
 
   bool setADR(bool adr) {
-    sendAT(GF("+ADR="), adr);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+ADR="), adr);
   }
 
   int getADR() {
-    int adr = -1;
-    sendAT(GF("+ADR?"));
-    if (waitResponse("+OK=") == 1) {
-        adr = stream.readStringUntil('\r').toInt();
-    }
-    return adr;
+    return (int)getIntValue(GF("+ADR?"));
   }
 
   String getDevAddr() {
-    String devaddr = "";
-    sendAT(GF("+DEVADDR?"));
-    if (waitResponse("+OK=") == 1) {
-        devaddr = stream.readStringUntil('\r');
-    }
-    return devaddr;
+    return getStringValue(GF("+DEVADDR?"));
   }
 
   String getNwkSKey() {
-    String nwkskey = "";
-    sendAT(GF("+NWKSKEY?"));
-    if (waitResponse("+OK=") == 1) {
-        nwkskey = stream.readStringUntil('\r');
-    }
-    return nwkskey;
+    return getStringValue(GF("+NWKSKEY?"));
   }
 
   String getAppSKey() {
-    String appskey = "";
-    sendAT(GF("+APPSKEY?"));
-    if (waitResponse("+OK=") == 1) {
-        appskey = stream.readStringUntil('\r');
-    }
-    return appskey;
+    return getStringValue(GF("+APPSKEY?"));
   }
 
   int getRX2DR() {
-    int dr = -1;
-    sendAT(GF("+RX2DR?"));
-    if (waitResponse("+OK=") == 1) {
-        dr = stream.readStringUntil('\r').toInt();
-    }
-    return dr;
+    return (int)getIntValue(GF("+RX2DR?"));
   }
 
   bool setRX2DR(uint8_t dr) {
-    sendAT(GF("+RX2DR="),dr);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+RX2DR="),dr);
   }
 
-  uint32_t getRX2Freq() {
-    int freq = -1;
-    sendAT(GF("+RX2FQ?"));
-    if (waitResponse("+OK=") == 1) {
-        freq = stream.readStringUntil('\r').toInt();
-    }
-    return freq;
+  int32_t getRX2Freq() {
+    return getIntValue(GF("+RX2FQ?"));
   }
 
   bool setRX2Freq(uint32_t freq) {
-    sendAT(GF("+RX2FQ="),freq);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+RX2FQ="),freq);
   }
 
   bool setFCU(uint16_t fcu) {
-    sendAT(GF("+FCU="), fcu);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+FCU="), fcu);
   }
 
   int32_t getFCU() {
-    int32_t fcu = -1;
-    sendAT(GF("+FCU?"));
-    if (waitResponse("+OK=") == 1) {
-        fcu = stream.readStringUntil('\r').toInt();
-    }
-    return fcu;
+    return getIntValue(GF("+FCU?"));
   }
 
   bool setFCD(uint16_t fcd) {
-    sendAT(GF("+FCD="), fcd);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+FCD="), fcd);
   }
 
   int32_t getFCD() {
-    int32_t fcd = -1;
-    sendAT(GF("+FCD?"));
-    if (waitResponse("+OK=") == 1) {
-        fcd = stream.readStringUntil('\r').toInt();
-    }
-    return fcd;
+    return getIntValue(GF("+FCD?"));
   }
 
   int32_t getRSSI() {
-    int32_t rssi = -1;
-    sendAT(GF("+RSSI?"));
-    if (waitResponse("+OK=") == 1) {
-        rssi = stream.readStringUntil('\r').toInt();
-    }
-    return rssi;
+    return getIntValue(GF("+RSSI?"));
   }
 
   int32_t getSNR() {
-    int32_t snr = -1;
-    sendAT(GF("+SNR?"));
-    if (waitResponse("+OK=") == 1) {
-        snr = stream.readStringUntil('\r').toInt();
-    }
-    return snr;
+    return getIntValue(GF("+SNR?"));
   }
 
 private:
@@ -936,11 +816,7 @@ private:
   }
 
   bool changeMode(_lora_mode mode) {
-    sendAT(GF("+MODE="), mode);
-    if (waitResponse() != 1) {
-      return false;
-    }
-    return true;
+    return setValue(GF("+MODE="), mode);
   }
 
   bool join(uint32_t timeout) {
@@ -1041,12 +917,7 @@ private:
   }
 
   bool getJoinStatus() {
-	bool jst = 0;
-    sendAT(GF("+NJS?"));
-    if (waitResponse(2000L, "+OK=") == 1) {
-        jst = (stream.readStringUntil('\r').toInt());
-    }
-    return jst;
+    return (getIntValue(GF("+NJS?")));
   }
 
   /* Utilities */
@@ -1189,7 +1060,7 @@ finish:
   }
 
   String getStringValue(ConstStr cmd){
-	String value;
+	String value = "";
 	sendAT(cmd);
 	if (waitResponse("+OK=") == 1) {
 		value = stream.readStringUntil('\r');
@@ -1204,6 +1075,12 @@ finish:
 		value = stream.readStringUntil('\r').toInt();
 	}
 	return value;
+  }
+
+  template<typename T, typename U>
+  bool setValue(T cmd, U value) {
+	sendAT(cmd, value);
+	return (waitResponse() == 1);
   }
 
 };
