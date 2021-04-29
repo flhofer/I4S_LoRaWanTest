@@ -214,14 +214,14 @@ const T& Max(const T& a, const T& b)
 #endif
 
 #define LORA_NL "\r"
-static const char LORA_OK[] = "+OK\r";
-static const char LORA_ERROR[] = "+ERR\r";
-static const char LORA_ERROR_PARAM[] = "+ERR_PARAM\r";
-static const char LORA_ERROR_BUSY[] = "+ERR_BUSY\r";
-static const char LORA_ERROR_OVERFLOW[] = "+ERR_PARAM_OVERFLOW\r";
-static const char LORA_ERROR_NO_NETWORK[] = "+ERR_NO_NETWORK\r";
-static const char LORA_ERROR_RX[] = "+ERR_RX\r";
-static const char LORA_ERROR_UNKNOWN[] = "+ERR_UNKNOWN\r";
+static const char LORA_OK[] = "+OK";
+static const char LORA_ERROR[] = "+ERR";
+static const char LORA_ERROR_PARAM[] = "+ERR_PARAM";
+static const char LORA_ERROR_BUSY[] = "+ERR_BUSY";
+static const char LORA_ERROR_OVERFLOW[] = "+ERR_PARAM_OVERFLOW";
+static const char LORA_ERROR_NO_NETWORK[] = "+ERR_NO_NETWORK";
+static const char LORA_ERROR_RX[] = "+ERR_RX";
+static const char LORA_ERROR_UNKNOWN[] = "+ERR_UNKNOWN";
 
 static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.4";
 static const char ARDUINO_FW_IDENTIFIER[] = "ARD-078";
@@ -503,7 +503,7 @@ public:
   String getChannelMask() {
     int size = 4*getChannelMaskSize(region);
     sendAT(GF("+CHANMASK?"));
-    if (waitResponse("+OK=") == 1) {
+    if (waitResponse() == 1) {
         channel_mask_str = stream.readStringUntil('\r');
         DBG("Full channel mask string: ", channel_mask_str);
         sscanf(channel_mask_str.c_str(), "%04hx%04hx%04hx%04hx%04hx%04hx", &channelsMask[0], &channelsMask[1], &channelsMask[2],
@@ -615,11 +615,11 @@ public:
 
   String version() {
     sendAT(GF("+DEV?"));
-    if (waitResponse("+OK=") == 1) {
+    if (waitResponse() == 1) {
         fw_version = stream.readStringUntil('\r');
     }
     sendAT(GF("+VER?"));
-    if (waitResponse("+OK=") == 1) {
+    if (waitResponse() == 1) {
         fw_version += " " + stream.readStringUntil('\r');
     }
 
@@ -662,11 +662,11 @@ public:
       return false;
     }
     sendAT(GF("+REBOOT"));
-    if (waitResponse(10000L, "+EVENT=0,0\r") != 1) {
+    if (waitResponse(10000L, "+EVENT=0,0") != 1) {
       return false;
     }
-    // Second answer, always returns +OK on new firmware versions
-    (void)streamSkipUntil('\r', 0);
+    // Second answer, always returns an additional +OK on new firmware versions
+    (void)streamSkipUntil('\r');
     delay(1000);
     return init();
   }
@@ -822,11 +822,11 @@ private:
   bool join(uint32_t timeout) {
     sendAT(GF("+JOIN"));
     sendAT();
-    if (waitResponse(timeout, "+EVENT=1,1\r") != 1) {
+    if (waitResponse(timeout, "+EVENT=1,1") != 1) {
       return false;
     }
-    // Second answer, always returns +OK on new firmware versions
-    (void)streamSkipUntil('\r', 0L);
+    // Second answer, always returns an additional +OK on new firmware versions for ABP
+    (void)streamSkipUntil('\r');
     return true;
   }
 
@@ -932,8 +932,6 @@ private:
     streamWrite(tail...);
   }
 
-  int streamRead() { return stream.read(); }
-
   bool streamSkipUntil(char c, unsigned long timeout = 1000L) {
     unsigned long startMillis = millis();
 	do {
@@ -978,61 +976,68 @@ private:
     data.reserve(64);
     int8_t index = -1;
     int length = 0;
+    int a = 0;
     unsigned long startMillis = millis();
     do {
       YIELD();
       while (stream.available() > 0) {
-        int a = streamRead();
+        a = stream.peek();
         if (a < 0) continue;
-        data += (char)a;
+        if (a == '=' || a == '\r'
+        		|| (a == '+' && data.length() > 0)) {
+			DBG("### Data string:", data);
+			if (r1 && data.endsWith(r1)) {
+			  index = 1;
+			  goto finish;
+			} else if (r2 && data.endsWith(r2)) {
+			  index = 2;
+			  goto finish;
+			} else if (r3 && data.endsWith(r3)) {
+			  index = 3;
+			  goto finish;
+			} else if (r4 && data.endsWith(r4)) {
+			  index = 4;
+			  goto finish;
+			} else if (r5 && data.endsWith(r5)) {
+			  index = 5;
+			  goto finish;
+			} else if (r6 && data.endsWith(r6)) {
+			  index = 6;
+			  goto finish;
+			} else if (r7 && data.endsWith(r7)) {
+			  index = 7;
+			  goto finish;
+			} else if (r8 && data.endsWith(r8)) {
+			  index = 8;
+			  goto finish;
+			} else if (data.endsWith("+RECV") && a == '=') {
+			  (void)stream.readStringUntil(',').toInt();
+			  length = stream.readStringUntil('\r').toInt();
+			  (void)streamSkipUntil('\n');
+			  (void)streamSkipUntil('\n');
+			  for (int i = 0; i < length;) {
+				if (stream.available()) {
+					rx.put(stream.read());
+					i++;
+				}
+			  }
+			  data = "";
+			  length = 0;
+			  continue;
+			}
+        }
+        data += (char)stream.read();
         length++;
         if (length >= 64){
         	DBG("### Data string too long:", data);
         	return index;
         }
-        if ((a > '0' && a != '=')  ||
-        	(a != '\r' && a != ':' && a != ' '))
-        	continue;				// continue receive until terminator
-        if (r1 && data.endsWith(r1)) {
-          index = 1;
-          goto finish;
-        } else if (r2 && data.endsWith(r2)) {
-          index = 2;
-          goto finish;
-        } else if (r3 && data.endsWith(r3)) {
-          index = 3;
-          goto finish;
-        } else if (r4 && data.endsWith(r4)) {
-          index = 4;
-          goto finish;
-        } else if (r5 && data.endsWith(r5)) {
-          index = 5;
-          goto finish;
-        } else if (r6 && data.endsWith(r6)) {
-          index = 6;
-          goto finish;
-        } else if (r7 && data.endsWith(r7)) {
-          index = 7;
-          goto finish;
-        } else if (r8 && data.endsWith(r8)) {
-          index = 8;
-          goto finish;
-        } else if (data.endsWith("+RECV=")) {
-          data = "";
-          (void)stream.readStringUntil(',').toInt();
-          length = stream.readStringUntil('\r').toInt();
-          (void)streamSkipUntil('\n');
-          (void)streamSkipUntil('\n');
-          for (int i = 0; i < length;) {
-            if (stream.available()) {
-                rx.put(stream.read());
-                i++;
-            }
-          }
-        }
       }
     } while (millis() - startMillis < timeout);
 finish:
+	if (a != '+') // no follow-up command, get terminator from buffer
+		(void)stream.read();
+
     if (!index) {
       data.trim();
       if (data.length()) {
@@ -1062,7 +1067,7 @@ finish:
   String getStringValue(ConstStr cmd){
 	String value = "";
 	sendAT(cmd);
-	if (waitResponse("+OK=") == 1) {
+	if (waitResponse() == 1) {
 		value = stream.readStringUntil('\r');
 	}
 	return value;
@@ -1071,7 +1076,7 @@ finish:
   int32_t getIntValue(ConstStr cmd){
 	int32_t value = -1;
 	sendAT(cmd);
-	if (waitResponse("+OK=") == 1) {
+	if (waitResponse() == 1) {
 		value = stream.readStringUntil('\r').toInt();
 	}
 	return value;

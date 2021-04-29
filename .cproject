@@ -61,9 +61,6 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="LoRaWanTest.null.824642650" name="LoRaWanTest"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Release">
@@ -71,4 +68,13 @@
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.macosx.exe.release.99841090;cdt.managedbuild.config.macosx.exe.release.99841090.;cdt.managedbuild.tool.gnu.cpp.compiler.macosx.exe.release.1103851141;cdt.managedbuild.tool.gnu.cpp.compiler.input.1825954163">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.macosx.exe.release.99841090;cdt.managedbuild.config.macosx.exe.release.99841090.;cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.release.765929631;cdt.managedbuild.tool.gnu.c.compiler.input.1500630102">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+	</storageModule>
 </cproject>
