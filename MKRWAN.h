@@ -1112,12 +1112,18 @@ private:
       YIELD();
       while (stream.available() > 0) {
         int a = streamRead();
-        if (a < 0) continue;		// ignore negative
+        if (a < 0) continue;
         data += (char)a;
+        length++;
+        if (length >= 64){
+        	DBG("### Data string too long:", data);
+        	return index;
+        }
         if (a != '\r' && a != '='
         		&& a != ':' && a != ' ')
         	continue;				// continue receive until terminator
-        if (r1 && data.endsWith(r1)) {
+        // Use endsWith istead of equals as if fails faster (common ERR root)
+        if (r1 && data.equals(r1)) {
           index = 1;
           goto finish;
         } else if (r2 && data.endsWith(r2)) {
@@ -1141,7 +1147,7 @@ private:
         } else if (r8 && data.endsWith(r8)) {
           index = 8;
           goto finish;
-        } else if (data.endsWith("+RECV=")) {
+        } else if (data.equals("+RECV=")) {
           data = "";
           stream.readStringUntil(',').toInt();
           length = stream.readStringUntil('\r').toInt();
