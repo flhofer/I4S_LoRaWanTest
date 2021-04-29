@@ -679,6 +679,8 @@ public:
     if (waitResponse(10000L, "+EVENT=0,0\r") != 1) {
       return false;
     }
+    // Second answer, always returns +OK on new firmware versions
+    (void)streamSkipUntil('\r', 0);
     delay(1000);
     return init();
   }
@@ -947,10 +949,8 @@ private:
     if (waitResponse(timeout, "+EVENT=1,1\r") != 1) {
       return false;
     }
-    // Second answer, always returns +OK
-    if (waitResponse() != 1) {
-      return false;
-    }
+    // Second answer, always returns +OK on new firmware versions
+    (void)streamSkipUntil('\r', 0L);
     return true;
   }
 
