@@ -1063,7 +1063,7 @@ private:
 
   int streamRead() { return stream.read(); }
 
-  bool streamSkipUntil(char c, long timeout = 1000L) {
+  bool streamSkipUntil(char c, unsigned long timeout = 1000L) {
     unsigned long startMillis = millis();
 	do {
 	  if (stream.available()) {
@@ -1122,7 +1122,7 @@ private:
         if ((a > '0' && a != '=')  ||
         	(a != '\r' && a != ':' && a != ' '))
         	continue;				// continue receive until terminator
-        // Use endsWith istead of equals as if fails faster (common ERR root)
+        // Use endsWith instead of equals as if fails faster (common ERR root)
         if (r1 && data.equals(r1)) {
           index = 1;
           goto finish;
