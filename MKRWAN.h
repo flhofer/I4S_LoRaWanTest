@@ -224,6 +224,7 @@ static const char LORA_ERROR_RX[] = "+ERR_RX";
 static const char LORA_ERROR_UNKNOWN[] = "+ERR_UNKNOWN";
 
 static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.4";
+static const char ARDUINO_FW_VERSION_AT[] = "ARD-078 1.2.4";
 static const char ARDUINO_FW_IDENTIFIER[] = "ARD-078";
 
 typedef enum {
@@ -279,6 +280,7 @@ public:
 	  network_joined = false;
 	  mask_size = 1;
 	  region = EU868;
+	  compat_mode = false;
     }
 
 public:
@@ -296,6 +298,7 @@ private:
   uint16_t      channelsMask[6];
   String        channel_mask_str;
   _lora_band    region;
+  bool			compat_mode;
 
 public:
   virtual int joinOTAA(const char *appEui, const char *appKey, const char *devEui, uint32_t timeout) {
@@ -812,6 +815,7 @@ private:
   }
 
   bool isLatestFW() {
+	compat_mode = (fw_version.compareTo(ARDUINO_FW_VERSION_AT) < 0);
     return (fw_version == ARDUINO_FW_VERSION);
   }
 
@@ -1067,7 +1071,8 @@ finish:
   String getStringValue(ConstStr cmd){
 	String value = "";
 	sendAT(cmd);
-	if (waitResponse() == 1) {
+	if ((!compat_mode && waitResponse(cmd) == 1)
+			|| (compat_mode && waitResponse() == 1)) {
 		value = stream.readStringUntil('\r');
 	}
 	return value;
@@ -1076,7 +1081,8 @@ finish:
   int32_t getIntValue(ConstStr cmd){
 	int32_t value = -1;
 	sendAT(cmd);
-	if (waitResponse() == 1) {
+	if ((!compat_mode && waitResponse(cmd) == 1)
+			|| (compat_mode && waitResponse() == 1)) {
 		value = stream.readStringUntil('\r').toInt();
 	}
 	return value;
