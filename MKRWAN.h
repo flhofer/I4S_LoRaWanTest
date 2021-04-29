@@ -1063,12 +1063,14 @@ private:
 
   int streamRead() { return stream.read(); }
 
-  bool streamSkipUntil(char c) { //TODO: timeout
-    while (true) {
-      while (!stream.available()) {}
-      if (stream.read() == c)
-        return true;
-    }
+  bool streamSkipUntil(char c, long timeout = 1000L) {
+    unsigned long startMillis = millis();
+	do {
+	  if (stream.available()) {
+		if (stream.read() == c)
+	      return true;
+	  }
+    } while (millis() - startMillis < timeout);
     return false;
   }
 
