@@ -1081,7 +1081,6 @@ private:
     DBG("### AT:", cmd...);
   }
 
-  // TODO: Optimize this!
   /**
    * @brief wait for a response from the modem.
    * 
@@ -1119,8 +1118,8 @@ private:
         	DBG("### Data string too long:", data);
         	return index;
         }
-        if (a != '\r' && a != '='
-        		&& a != ':' && a != ' ')
+        if ((a > '0' && a != '=')  ||
+        	(a != '\r' && a != ':' && a != ' '))
         	continue;				// continue receive until terminator
         // Use endsWith istead of equals as if fails faster (common ERR root)
         if (r1 && data.equals(r1)) {
