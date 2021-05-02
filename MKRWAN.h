@@ -341,6 +341,7 @@ public:
 	  mask_size = 1;
 	  region = EU868;
 	  compat_mode = false;
+	  msize = 64;	// default for arduino
     }
 
 public:
@@ -359,6 +360,7 @@ private:
   String        channel_mask_str;
   _lora_band    region;
   bool			compat_mode;
+  size_t		msize;
 
 public:
   virtual int joinOTAA(const char *appEui, const char *appKey, const char *devEui, uint32_t timeout) {
@@ -662,7 +664,7 @@ public:
   }
 
   void setBaud(unsigned long baud) {
-    sendAT(GF(AT_UART AT_EQ), baud);
+    sendAT(GF(AT_UART), baud);
   }
 
   bool autoBaud(unsigned long timeout = 10000L) {
@@ -958,7 +960,11 @@ private:
     }
 
     int size = getIntValue(GF(AT_MSIZE));
-    return (size < 0) ? 0 : (size_t)size;
+    if (size > 0){
+    	msize = (size_t)size;
+    	return msize;
+    }
+    return 0;
   }
 
   bool getJoinStatus() {
@@ -1029,7 +1035,7 @@ private:
                        ConstStr r3=GFP(LORA_ERROR_PARAM), ConstStr r4=GFP(LORA_ERROR_BUSY), ConstStr r5=GFP(LORA_ERROR_OVERFLOW),
                        ConstStr r6=GFP(LORA_ERROR_NO_NETWORK), ConstStr r7=GFP(LORA_ERROR_RX), ConstStr r8=GFP(LORA_ERROR_UNKNOWN))
   {
-    data.reserve(64);
+    data.reserve(msize);
     int8_t index = -1;
     int length = 0;
     int a = 0;
@@ -1103,7 +1109,7 @@ private:
         }
         data += (char)stream.read();
         length++;
-        if (length >= 64){
+        if (length >= msize){
         	DBG("### Data string too long:", data);
         	return index;
         }
