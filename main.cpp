@@ -54,7 +54,7 @@ static long durationTest;						// test duration in ms
 // LoRaWan settings
 static bool confirmed = true;					// confirmed messaging?
 static bool otaa = false;						// use OTAA join instead of ABP
-static uint16_t chnEnabled = 0xF;				// Channels enabled mask for LoRaWan mode tests
+static uint16_t chnEnabled = 0xFF;				// Channels enabled mask for LoRaWan mode tests
 static uint8_t txPowerTst = 4;					// txPower setting for the low power test
 static uint8_t dataLen = 1;						// data length to send over LoRa for a test
 static uint8_t dataRate = 5;					// data rate starting value
@@ -224,8 +224,7 @@ runTest(){
 
 			LoRaMgmtSetup();
 			ret |= LoRaSetChannels(chnEnabled, 0, dataRate);	// set channels
-//			ret |=
-					LoRaMgmtTxPwr(txPowerTst);	// set power index;
+			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
 			tstate = rStart;
 			break;
 		// placeholder future modes.. test ecc
@@ -444,9 +443,9 @@ void readInput() {
 
 		case 'C':
 			chnEnabled = readSerialH();
-			if (chnEnabled == 0 || chnEnabled > 16 ){
+			if (chnEnabled == 0 || chnEnabled > 255 ){
 				debugSerial.println("Invalid channel mask [1-16]");
-				chnEnabled = 0xF; // set to default
+				chnEnabled = 0xFF; // set to default
 			}
 			break;
 

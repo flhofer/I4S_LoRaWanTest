@@ -173,6 +173,8 @@ int LoRaMgmtSetup(){
 	debugSerial.print("Your device EUI is: ");
 	debugSerial.println(modem.deviceEUI());
 
+	modem.publicNetwork(true);
+
 	debugSerial.println("-- PERSONALIZE");
 	int connected;
 	if (otaa)
