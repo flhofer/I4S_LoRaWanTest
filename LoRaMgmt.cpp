@@ -6,11 +6,11 @@
  */
 
 #include "LoRaMgmt.h"
-
 #include "main.h"				// Global includes/definitions, i.e. address, key, debug mode
 #include "MKRWAN.h"
+
 #include <LoRa.h>
-//#include <stdlib.h>				// ARM standard library
+#include <stdlib.h>				// ARM standard library
 
 LoRaModem modem(loraSerial);
 
@@ -58,7 +58,8 @@ generatePayload(byte *payload){
  *
  * Return:	  status of sending, >0 ok (no of bytes), <0 error
  */
-int LoRaMgmtSend(){
+int
+LoRaMgmtSend(){
 	modem.beginPacket();
 	modem.write(genbuf, dataLen);
 	return modem.endPacket(conf);
@@ -71,7 +72,8 @@ int LoRaMgmtSend(){
  *
  * Return:	  status of sending, >0 ok (no of bytes), <0 error
  */
-int LoRaMgmtSendDumb(){
+int
+LoRaMgmtSendDumb(){
 	while (LoRa.beginPacket() == 0) {
 	  delay(1);
 	}
@@ -86,7 +88,8 @@ int LoRaMgmtSendDumb(){
  *
  * Return:	  status of polling, 0 no message, -1 error, >0 No of bytes
  */
-int LoRaMgmtPoll(){
+int
+LoRaMgmtPoll(){
 	delay(1000);
 	if (!modem.available()) {
 		// No downlink message received at this time.
@@ -133,21 +136,22 @@ LoRaGetChannels(uint16_t * chnMsk){
  *
  * Arguments: - pointer to Structure for the result data
  *
- * Return:	  - 0 if ok, <0 error
+ * Return:	  - 0 if OK, <0 error
  */
 int
 LoRaMgmtGetResults(sLoRaResutls_t * res){
+	int ret = 0;
 //	res->timeTx = timeTx;
 //	res->timeRx = timeRx;
 //	res->timeToRx = timeToRx;
 //	res->txFrq = ttn.getFrequency();
-	(void)LoRaGetChannels(&res->chnMsk);
+	ret |= LoRaGetChannels(&res->chnMsk);
 //	res->lastCR = ttn.getCR();
 	res->txDR = modem.getDataRate();
 	res->txPwr = modem.getPower();
 	res->rxRssi = modem.getRSSI();
 	res->rxSnr = modem.getSNR();
-	return 0;
+	return ret * -1;
 }
 
 /*
@@ -157,7 +161,8 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
  *
  * Return:	  returns 0 if successful, else -1
  */
-int LoRaMgmtSetup(){
+int
+LoRaMgmtSetup(){
 
 	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
@@ -204,7 +209,8 @@ int LoRaMgmtSetup(){
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaMgmtSetupDumb(long FRQ){
+int
+LoRaMgmtSetupDumb(long FRQ){
 
 	modem.dumb();
 
@@ -233,7 +239,8 @@ int LoRaMgmtSetupDumb(long FRQ){
  *
  * Return:	  -
  */
-void LoRaSetGblParam(bool confirm, int datalen, int OTAA){
+void
+LoRaSetGblParam(bool confirm, int datalen, int OTAA){
 	conf = confirm;
 	otaa = (OTAA);
 	// set boundaries for len value
@@ -255,7 +262,8 @@ void LoRaSetGblParam(bool confirm, int datalen, int OTAA){
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
+int
+LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
 
 	bool retVal = true;
 
@@ -277,7 +285,8 @@ int LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaMgmtUpdt(){
+int
+LoRaMgmtUpdt(){
 	// Prepare PayLoad of x bytes
 	(void)generatePayload(genbuf);
 
@@ -291,7 +300,8 @@ int LoRaMgmtUpdt(){
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaMgmtRcnf(){
+int
+LoRaMgmtRcnf(){
 	if (conf)
 		return modem.restart() ? 0 : -1;
 	return 0;
@@ -304,7 +314,8 @@ int LoRaMgmtRcnf(){
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int LoRaMgmtTxPwr(uint8_t txPwr){
+int
+LoRaMgmtTxPwr(uint8_t txPwr){
 	return modem.power(RFO, txPwr) ? 0 : -1;
 }
 
