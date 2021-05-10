@@ -62,10 +62,19 @@ static uint8_t repeatSend = 5;					// number of send repeats
 
 /* 	Globals		*/
 
-int debug = 1;
+int debug = 1;			// print debug
+int store = 0;			// store on SD, not terminal output (TODO)
 
 /*************** MIXED STUFF ********************/
 
+/*
+ * printScaled(): Print integer as scaled value
+ *
+ * Arguments:	- value to print
+ * 				- scale in x-ths, default (1/1000th)
+ *
+ * Return:		-
+ */
 static void
 printScaled(uint32_t value, uint32_t Scale = 1000){
 	debugSerial.print(value / Scale);
@@ -80,10 +89,17 @@ printScaled(uint32_t value, uint32_t Scale = 1000){
 		debugSerial.print(value);
 }
 
+/*
+ * printTestResults(): Print LoRaWan communication test
+ *
+ * Arguments:	-
+ *
+ * Return:		-
+ */
 static void
 printTestResults(){
 	// use all local, do not change global
-	sLoRaResutls_t * trn = &testResults[0]; // Init results pointer
+	sLoRaResutls_t * trn = &testResults[0]; // Initialize results pointer
 
 	// for printing
 	char buf[128];
@@ -98,6 +114,13 @@ printTestResults(){
 	}
 }
 
+/*
+ * printTestResultsDumb(): print result from LoRa interference tests
+ *
+ * Arguments:	-
+ *
+ * Return:		-
+ */
 static void
 printTestResultsDumb(){
 	// for printing
@@ -109,7 +132,15 @@ printTestResultsDumb(){
 	debugSerial.println(buf);
 }
 
-uint16_t readSerialH(){
+/*
+ * readSerialH(): parsing hex input strings
+ *
+ * Arguments:	-
+ *
+ * Return:		- Hex number read
+ */
+static uint16_t
+readSerialH(){
 	char nChar;
 	uint16_t retVal = 0;
 	while (1){
@@ -132,7 +163,7 @@ uint16_t readSerialH(){
 				debugSerial.read();
 				// fall-through
 				// @suppress("No break at end of case")
-			default:
+			default:	// Not a number or HEX char/terminator
 				return retVal;
 		}
 
@@ -144,7 +175,15 @@ uint16_t readSerialH(){
 	return retVal;
 }
 
-uint16_t readSerialD(){
+/*
+ * readSerialD(): parsing numeric input strings
+ *
+ * Arguments:	-
+ *
+ * Return:		- number read
+ */
+static uint16_t
+readSerialD(){
 	char A;
 	uint16_t retVal = 0;
 	while ((A = debugSerial.peek())
@@ -187,7 +226,7 @@ static int	pollcnt;			// un-conf poll retries
 static int	retries; 			// un-conf send retries
 
 /*
- * runTest: test runner
+ * runTest(): test runner, state machine
  *
  * Arguments: -
  *
@@ -403,7 +442,13 @@ runTest(){
 
 	return tstate;
 }
-
+/*
+ * readInput(): read input string
+ *
+ * Arguments:	-
+ *
+ * Return:		-
+ */
 void readInput() {
 
 	signed char A;
@@ -506,7 +551,11 @@ void readInput() {
 
 }
 
-//The setup function is called once at startup of the sketch
+/*
+ *	Setup(): system start
+ *
+ *	The setup function is called once at startup of the sketch
+ */
 void setup()
 {
 	REG_PORT_DIRSET0 = LEDBUILDIN; // Set led to output
@@ -530,8 +579,11 @@ void setup()
 	debugSerial.flush();
 }
 
-
-// The loop function is called in an endless loop
+/*
+ *  loop(): main call
+ *
+ *  The loop function is called in an endless loop
+ */
 void loop()
 {
 	if (testReq == qIdle)
