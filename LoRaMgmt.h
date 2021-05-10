@@ -13,7 +13,7 @@
 
 // Select frequency plan between TTN_FP_EU868 or TTN_FP_US915
 #define MAXLORALEN	51			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
-#define LORACHNMAX 16
+#define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
 
 extern char *appEui;

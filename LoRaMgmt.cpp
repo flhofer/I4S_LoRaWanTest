@@ -62,7 +62,6 @@ int
 LoRaMgmtSend(){
 	modem.beginPacket();
 	modem.write(genbuf, dataLen);
-
 	return modem.endPacket(conf);
 }
 
@@ -114,6 +113,21 @@ LoRaMgmtPoll(){
 
 /*************** MANAGEMENT FUNCTIONS ********************/
 
+static int
+xtoInt(char nChar) {
+	switch (nChar)
+	{
+		case '0' ... '9': // Digits
+			return (nChar - '0');
+		case 'a' ... 'f': // small letters a-f
+			return (nChar - 87); // 87 = a - 10
+		case 'A' ... 'F': // capital letters A-F
+			return (nChar - 55); // 55 = A - 10
+		default:	// Not a number or HEX char/terminator
+			return 0;
+	}
+}
+
 /*
  * LoRaGetChannels:
  *
@@ -122,12 +136,14 @@ LoRaMgmtPoll(){
  * Return:	  - return 0 if OK, -1 if error
  */
 static int
-LoRaGetChannels(uint16_t * chnMsk){
+LoRaGetChannels(uint16_t * chnMsk){ // TODO: for now only EU868
 
 	*chnMsk = 0;
-	// TODO: use getchannelmask (string) instead of bit by bit
-	for (int i=0; i<LORACHNMAX; i++)
-	  *chnMsk |= (uint16_t)modem.isChannelEnabled((uint8_t)i) << i;
+	int length = modem.getChannelMaskSize(freqPlan);
+	const char * mask = modem.getChannelMask().c_str();
+
+	for (int i=0; i < min(length * 4, LORACHNMAX / 4); i++)
+	  *chnMsk |= (uint16_t)xtoInt(mask[i]) << (4*(4-i));
 
 	return (0 == *chnMsk) * -1; // error if mask is empty!
 }
@@ -268,14 +284,20 @@ LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
 
 	bool retVal = true;
 
-	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1)
-		if ((bool)chnMsk & 0x01) {
-			retVal &= modem.enableChannel((uint8_t)i);
-			retVal &= modem.dataRate(drMax);
-		}
-		else
-			retVal &= modem.disableChannel((uint8_t)i);
+	uint16_t mskIs;
 
+	retVal &= LoRaGetChannels(&mskIs);
+
+	// match is with want, switch changes
+	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1, mskIs >>=1)
+		if ((bool) (chnMsk ^ mskIs)){
+			if ((bool)chnMsk & 0x01) {
+				retVal &= modem.enableChannel((uint8_t)i);
+				retVal &= modem.dataRate(drMax);
+			}
+			else
+				retVal &= modem.disableChannel((uint8_t)i);
+		}
 	return !retVal * -1;
 }
 
