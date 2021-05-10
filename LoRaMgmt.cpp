@@ -12,22 +12,22 @@
 #include <LoRa.h>
 #include <stdlib.h>				// ARM standard library
 
-LoRaModem modem(loraSerial);
+LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated")
 
 #define freqPlan EU868
 
 // DevAddr, NwkSKey, AppSKey and the frequency plan
-static const char *devAddr = LORA_DEVADDR;
-static const char *nwkSKey = LORA_NWSKEY;
-static const char *appSKey = LORA_APSKEY;
-static const char *appEui  = LORA_APPEUI;
-static const char *appKey  = LORA_APPKEY;
+char *appEui = NULL;
+char *appKey = NULL;
+char *devAddr = NULL;
+char *nwkSKey = NULL;
+char *appSKey = NULL;
 
-static bool conf = false;			// use confirmed messages
-static bool otaa = false;			// use otaa join
-static int dataLen = 1; 			// TX data length for tests
+bool conf = false;			// use confirmed messages
+bool otaa = false;			// use otaa join
+int dataLen = 1; 			// TX data length for tests
+
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
-
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
 /********************** HELPERS ************************/
@@ -62,6 +62,7 @@ int
 LoRaMgmtSend(){
 	modem.beginPacket();
 	modem.write(genbuf, dataLen);
+
 	return modem.endPacket(conf);
 }
 
@@ -318,5 +319,3 @@ int
 LoRaMgmtTxPwr(uint8_t txPwr){
 	return modem.power(RFO, txPwr) ? 0 : -1;
 }
-
-

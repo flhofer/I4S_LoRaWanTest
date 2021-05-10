@@ -339,8 +339,8 @@ runTest(){
 
 	case rStart:
 
-		if ((ret = LoRaMgmtSend()) && ret != 1){
-			if (-9 == ret) // no chn -> pause for free-delay / active channels
+		if ((ret = LoRaMgmtSend()) && ret < 0){
+			if (LORABUSY == ret) // no chn -> pause for free-delay / active channels
 				delay(RESFREEDEL/actChan);
 			else
 				delay(100); // simple retry timer 100ms, e.g. busy
@@ -400,10 +400,7 @@ runTest(){
 	case rEvaluate:
 		debugSerial.print(prtSttAddMeas);
 
-		(void)LoRaMgmtGetResults(trn); // TODO: implement and use return value
-		// pgm_read_word = read char pointer address from PROGMEM pos PRTTBLCR of the string array
-		// strcpy_P = copy char[] from PRROGMEM at that address of PRROGMEM to buf
-		// *.print = print that char to serial
+		ret = LoRaMgmtGetResults(trn);
 
 		if (debug) {
 			debugSerial.print(prtTblCR);
