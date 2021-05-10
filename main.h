@@ -26,13 +26,13 @@
 // global types
 typedef struct sLoRaResutls {
 	uint32_t timeTx;
-	uint32_t timeRx;		// TODO: one of the two may be removed
+	uint32_t timeRx;		// one of the two may be removed
 	uint32_t timeToRx;
 	uint32_t txFrq;			// current used frequency
 	uint16_t chnMsk;		// Concluding channel mask
 	uint8_t lastCR;			// Coding rate 4/x
 	uint8_t txDR;			// Tx data rate
-	int8_t txPwr;			// Tx power index used TODO: check if we store index or power dBm
+	int8_t txPwr;			// Tx power index used
 	int8_t rxRssi;			// last rx RSSI, default -128
 	uint8_t rxSnr;			// last rx SNR, default -128
 } sLoRaResutls_t;

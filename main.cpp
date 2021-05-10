@@ -46,7 +46,7 @@ static sLoRaResutls_t * trn;					// Pointer to actual entry
 static uint8_t actChan = 16;					// active channels
 
 // Generic Settings
-static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, 2 TODO tests..
+static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, (2-4 Reserved Tone Tests)
 static long Frequency = 8683000;				// Frequency of dumb LoRa mode *100 in kHz
 static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
@@ -55,7 +55,7 @@ static long durationTest;						// test duration in ms
 static bool confirmed = true;					// confirmed messaging?
 static bool otaa = false;						// use OTAA join instead of ABP
 static uint16_t chnEnabled = 0xFF;				// Channels enabled mask for LoRaWan mode tests
-static uint8_t txPowerTst = 4;					// txPower setting for the low power test
+static uint8_t txPowerTst = 0;					// txPower setting for the low power test
 static uint8_t dataLen = 1;						// data length to send over LoRa for a test
 static uint8_t dataRate = 5;					// data rate starting value
 static uint8_t repeatSend = 5;					// number of send repeats
@@ -130,6 +130,46 @@ printTestResultsDumb(){
 	sprintf(buf, "%07lu;%07lu;%lu;",
 			durationTest, txCnt, Frequency*100);
 	debugSerial.println(buf);
+}
+
+/*
+ * readSerialS(): parsing hex input strings
+ *
+ * Arguments:	- pointer to char* to put string
+ *
+ * Return:		- Hex string
+ */
+static void
+readSerialS(char * retVal, int len){
+	char nChar;
+	int pos = 0;
+	retVal[0] = '\0';
+	while (1){
+		if (pos > len ){
+			debugSerial.println("Error: too long value! Remember using h to terminate hex");
+			break;
+		}
+
+		nChar = debugSerial.peek();
+		switch (nChar)
+		{
+			case '0' ... '9': // Digits
+			case 'a' ... 'f': // small letters a-f
+			case 'A' ... 'F': // capital letters A-F
+				debugSerial.read();
+				retVal[pos] = nChar;
+				pos++;
+				break;
+			case 'h':	// hex termination
+				debugSerial.read();
+				// fall-through
+				// @suppress("No break at end of case")
+			default:	// Not a number or HEX char/terminator
+				retVal[pos] = '\0';
+				return;
+		}
+	}
+	return;
 }
 
 /*
@@ -415,7 +455,6 @@ runTest(){
 	/*
 	 * Common states ending
 	 */
-
 	case rPrint:
 		switch (mode){
 		default:
@@ -486,22 +525,62 @@ void readInput() {
 			otaa = false;
 			break;
 
+		case 'N': // Network session key for ABP
+			readSerialS(nwkSKey, 32);
+			if (strlen(nwkSKey) < 32){
+				debugSerial.println("Invalid network session key");
+				strcpy(nwkSKey, LORA_NWSKEY);
+			}
+			break;
+
+		case 'A': // Application session key for ABP
+			 readSerialS(appSKey, 32);
+			if (strlen(appSKey) < 32){
+				debugSerial.println("Invalid application session key");
+				strcpy(appSKey, LORA_APSKEY);
+
+			}
+			break;
+
+		case 'D': // Device address for ABP
+			readSerialS(devAddr, 8);
+			if (strlen(devAddr) < 8){
+				debugSerial.println("Invalid device address key");
+				strcpy(devAddr, LORA_DEVADDR);
+			}
+			break;
+
+		case 'K': // Application Key for OTAA
+			readSerialS(appKey, 32);
+			if (strlen(appKey) < 32){
+				debugSerial.println("Invalid application key");
+				strcpy(appKey, LORA_APPKEY);
+			}
+			break;
+
+		case 'E': // EUI address for OTAA
+			readSerialS(appEui, 16);
+			if (strlen(appEui) < 16){
+				debugSerial.println("Invalid EUI address");
+				strcpy(appEui, LORA_APPEUI);
+			}
+			break;
+
 		case 'C':
 			chnEnabled = readSerialH();
-			if (chnEnabled == 0 || chnEnabled > 255 ){
-				debugSerial.println("Invalid channel mask [1-16]");
+			if (chnEnabled < 0x07 || chnEnabled > 0xFF ){
+				debugSerial.println("Invalid channel mask [0x07-0xFFh]");
 				chnEnabled = 0xFF; // set to default
 			}
 			break;
 
-		case 'p': // read tx power index
+		case 'p': // read Tx power index
 			txPowerTst = (uint8_t)readSerialD();
 			if (txPowerTst > 5 ){
 				debugSerial.println("Invalid power level [0-5]");
-				txPowerTst = 4; // set to default
+				txPowerTst = 0; // set to default
 			}
 			break;
-
 
 		case 'l': // read data length
 			dataLen = (uint8_t)readSerialD();
@@ -522,7 +601,7 @@ void readInput() {
 		case 'r': // read repeat count for LoRaWan packets
 			repeatSend = (uint8_t)readSerialD();
 			if (repeatSend == 0 || repeatSend > TST_MXRSLT){
-				debugSerial.print("Invalid repeat count [1-"); // TODO: simplify
+				debugSerial.print("Invalid repeat count [1-");
 				debugSerial.print(TST_MXRSLT);
 				debugSerial.println("]");
 				repeatSend = 5; // set to default
@@ -577,6 +656,12 @@ void setup()
 
 	debugSerial.print(prtSttSelect);
 	debugSerial.flush();
+
+	appEui  = strdup(LORA_APPEUI);
+	appKey  = strdup(LORA_APPKEY);
+	devAddr = strdup(LORA_DEVADDR);
+	nwkSKey = strdup(LORA_NWSKEY);
+	appSKey = strdup(LORA_APSKEY);
 }
 
 /*
