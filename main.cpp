@@ -339,6 +339,11 @@ runTest(){
 
 	case rStart:
 
+		if (testReq >= qStop ){
+			tstate = rStop;
+			durationTest = millis() - startTs;
+		}
+
 		if ((ret = LoRaMgmtSend()) && ret < 0){
 			if (LORABUSY == ret) // no chn -> pause for free-delay / active channels
 				delay(RESFREEDEL/actChan);
@@ -362,6 +367,11 @@ runTest(){
 
 	case rRun:
 
+		if (testReq >= qStop ){
+			tstate = rStop;
+			durationTest = millis() - startTs;
+		}
+
 		if ((ret = LoRaMgmtPoll()) && (confirmed || (pollcnt < UNCF_POLL))){
 			if (-9 == ret) // no chn -> pause for free-delay / active channels
 				delay(RESFREEDEL/actChan);
@@ -384,7 +394,7 @@ runTest(){
 	case rStop:
 
 		// unsuccessful and retries left?
-		if (failed && (repeatSend > retries)){
+		if (failed && (repeatSend > retries) && testReq < qStop){
 			tstate = rStart;
 			debugSerial.print(prtSttRetry);
 			delay(RESFREEDEL/actChan); // delay for modem resource free
@@ -431,7 +441,7 @@ runTest(){
 		}
 
 		// End of tests?
-		if (trn >= &testResults[TST_MXRSLT-1]){
+		if (trn >= &testResults[TST_MXRSLT-1] || testReq >= qStop){
 			debugSerial.print(prtSttEnd);
 			tstate = rEnd;
 			break;
