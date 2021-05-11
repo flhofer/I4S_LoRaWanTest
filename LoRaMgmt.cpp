@@ -286,7 +286,7 @@ LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
 
 	uint16_t mskIs;
 
-	retVal &= LoRaGetChannels(&mskIs);
+	retVal &= !LoRaGetChannels(&mskIs); // 0 is ok
 
 	// match is with want, switch changes
 	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1, mskIs >>=1)
