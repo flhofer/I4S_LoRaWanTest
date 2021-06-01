@@ -512,7 +512,7 @@ void readInput() {
 
 		case 'f':
 			Frequency = (long)readSerialD() * 100000;
-			if (Frequency < 8630 || Frequency > 8700 ){
+			if (Frequency < 863000000 || Frequency > 870000000 ){
 				debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
 				Frequency = 868300000; // set to default
 			}
