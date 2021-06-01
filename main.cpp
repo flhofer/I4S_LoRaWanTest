@@ -154,8 +154,8 @@ readSerialS(char * retVal, int len){
 		switch (nChar)
 		{
 			case '0' ... '9': // Digits
-			case 'a' ... 'f': // small letters a-f
 			case 'A' ... 'F': // capital letters A-F
+			case 'a' ... 'f': // small letters a-f
 				debugSerial.read();
 				retVal[pos] = nChar;
 				pos++;
@@ -185,19 +185,23 @@ readSerialH(){
 	uint16_t retVal = 0;
 	while (1){
 		nChar = debugSerial.peek();
+		if ((UINT16_MAX >> 4) < retVal && nChar != 'h'){
+			debugSerial.println("Error: too long value! Remember using h to terminate hex");
+			break;
+		}
 		switch (nChar)
 		{
 			case '0' ... '9': // Digits
 				debugSerial.read();
-				retVal = retVal*16 + (int16_t)(nChar - '0');
-				break;
-			case 'a' ... 'f': // small letters a-f
-				debugSerial.read();
-				retVal = retVal*16 + (int16_t)(nChar - 55); // 55 = A - 10
+				retVal = retVal<<4 | (int16_t)(nChar - '0');
 				break;
 			case 'A' ... 'F': // capital letters A-F
 				debugSerial.read();
-				retVal = retVal*16 + (int16_t)(nChar - 87); // 87 = a - 10
+				retVal = retVal<<4 | (int16_t)(nChar - 55); // 55 = A - 10
+				break;
+			case 'a' ... 'f': // small letters a-f
+				debugSerial.read();
+				retVal = retVal<<4 | (int16_t)(nChar - 87); // 87 = a - 10
 				break;
 			case 'h':	// hex termination
 				debugSerial.read();
@@ -207,10 +211,6 @@ readSerialH(){
 				return retVal;
 		}
 
-		if (log10((double)retVal) >= 4.0f ){
-			debugSerial.println("Error: too long value! Remember using h to terminate hex");
-			break;
-		}
 	}
 	return retVal;
 }
