@@ -22,6 +22,7 @@ char *appKey = NULL;
 char *devAddr = NULL;
 char *nwkSKey = NULL;
 char *appSKey = NULL;
+char *devEUI = NULL;
 
 bool conf = false;			// use confirmed messages
 bool otaa = false;			// use otaa join
@@ -193,7 +194,10 @@ LoRaMgmtSetup(){
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
 	debugSerial.print("Your device EUI is: ");
-	debugSerial.println(modem.deviceEUI());
+	if (!devEUI){
+		devEUI = strdup(modem.deviceEUI().c_str());
+	}
+	debugSerial.println(devEUI);
 
 	modem.publicNetwork(true);
 
@@ -340,4 +344,11 @@ LoRaMgmtRcnf(){
 int
 LoRaMgmtTxPwr(uint8_t txPwr){
 	return modem.power(RFO, txPwr) ? 0 : -1;
+}
+
+char* LoRaMgmtGetEUI(){
+	if (!devEUI){
+		LoRaMgmtSetup();
+	}
+	return devEUI;
 }

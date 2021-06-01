@@ -36,5 +36,6 @@ int LoRaMgmtRcnf();
 int LoRaMgmtTxPwr(uint8_t txPwr);
 
 int LoRaMgmtGetResults(sLoRaResutls_t * res);
+char* LoRaMgmtGetEUI();
 
 #endif /* LORAMGMT_H_ */

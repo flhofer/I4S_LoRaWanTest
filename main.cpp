@@ -629,6 +629,10 @@ void readInput() {
 			debugSerial.println(MICROVER);
 			break;
 
+		case 'I': // Print type of micro-controller
+			debugSerial.println(LoRaMgmtGetEUI());
+			break;
+
 		case 'n': // disable debug print
 			debug = 0;
 			break;
