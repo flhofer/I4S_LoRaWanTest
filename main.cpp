@@ -47,7 +47,7 @@ static uint8_t actChan = 16;					// active channels
 
 // Generic Settings
 static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, (2-4 Reserved Tone Tests)
-static long Frequency = 8683000;				// Frequency of dumb LoRa mode *100 in kHz
+static long Frequency = 868300000;				// Frequency of dumb LoRa mode
 static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
 
@@ -128,7 +128,7 @@ printTestResultsDumb(){
 
 	debugSerial.print(prtSttResults);
 	sprintf(buf, "%07lu;%07lu;%lu;",
-			durationTest, txCnt, Frequency*100);
+			durationTest, txCnt, Frequency);
 	debugSerial.println(buf);
 }
 
