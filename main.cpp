@@ -46,7 +46,7 @@ static sLoRaResutls_t * trn;					// Pointer to actual entry
 static uint8_t actChan = 16;					// active channels
 
 // Generic Settings
-static uint8_t mode = 1;						// test mode = 0 LoRa, 1 LoRaWan, (2-4 Reserved Tone Tests)
+static uint8_t mode = 2;						// test mode = 0 off, 1 LoRa, 2 LoRaWan, (3-5 Reserved Tone Tests)
 static long Frequency = 868300000;				// Frequency of dumb LoRa mode
 static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
@@ -245,6 +245,7 @@ static unsigned long startTs = 0; // loop timer
 // Enumeration for test status
 typedef enum { 	rError = -1,
 				rInit = 0,
+				rOff,
 				rDumb,
 				rStart,
 				rRun,
@@ -288,15 +289,19 @@ runTest(){
 
 		switch (mode)
 		{
+		case 0 : // off- mute
+			tstate = rOff;
+			break;
+
 		default:
-		case 0 : // dumb LoRa
+		case 1 : // dumb LoRa
 			ret |= LoRaMgmtSetupDumb(Frequency);	// set frequency
 
 			txCnt = 0;
 			tstate = rDumb;
 			break;
 
-		case 1 : // LoRaWan
+		case 2 : // LoRaWan
 			// reset status on next test
 			memset(testResults,0, sizeof(testResults));
 			trn = &testResults[0];	// Init results pointer
@@ -327,6 +332,10 @@ runTest(){
 	case rDumb:
 		(void)LoRaMgmtSendDumb();
 		txCnt++;
+		// fall-through
+		// @suppress("No break at end of case")
+
+	case rOff:
 		if (testReq >= qStop ){
 			tstate = rPrint;
 			durationTest = millis() - startTs;
@@ -464,12 +473,15 @@ runTest(){
 	 */
 	case rPrint:
 		switch (mode){
-		default:
 		case 0:
+			break;
+
+		default:
+		case 1:
 			printTestResultsDumb();
 			break;
 
-		case 1:
+		case 2:
 			printTestResults();
 			break;
 		}
@@ -504,9 +516,9 @@ void readInput() {
 
 		case 'm': // read test mode
 			mode = (uint8_t)readSerialD();
-			if (mode > 1){
-				debugSerial.println("Invalid mode [0-1]");
-				mode = 1; // set to default
+			if (mode > 2){
+				debugSerial.println("Invalid mode [0-2]");
+				mode = 2; // set to default
 			}
 			break;
 
