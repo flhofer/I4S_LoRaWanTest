@@ -247,13 +247,17 @@ typedef enum { 	rError = -1,
 				rInit = 0,
 				rOff,
 				rDumb,
+
+				rWaitLoRa = 5,
 				rStart,
 				rRun,
 				rStop,
-				rEvaluate,
+
+				rEvaluate = 15,
 				rReset,
 				rPrint,
-				rEnd = 10
+
+				rEnd = 20
 			} testRun_t;
 
 typedef enum {	qIdle = 0,
@@ -302,6 +306,7 @@ runTest(){
 			break;
 
 		case 2 : // LoRaWan
+		case 3 : // LoRaRemote
 			// reset status on next test
 			memset(testResults,0, sizeof(testResults));
 			trn = &testResults[0];	// Init results pointer
@@ -309,7 +314,11 @@ runTest(){
 			LoRaMgmtSetup();
 			ret |= LoRaSetChannels(chnEnabled, 0, dataRate);	// set channels
 			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
-			tstate = rStart;
+
+			if (mode == 2)
+				tstate = rStart;
+			else
+				tstate = rWaitLoRa;
 			break;
 		// placeholder future modes.. test ecc
 		}
@@ -345,6 +354,18 @@ runTest(){
 	/*
 	 * LoRaWan execution states
 	 */
+
+	case rWaitLoRa:
+		// delay in mgmt - 1000ms
+		{
+			int cmd = 0;
+			if ((cmd = LoRaMgmtRemote()) == 1)
+				tstate = rStart;
+			else if (cmd != 0)
+				tstate = rError;
+		}
+		// fall-through
+		// @suppress("No break at end of case")
 
 	case rStart:
 
@@ -482,6 +503,7 @@ runTest(){
 			break;
 
 		case 2:
+		case 3:
 			printTestResults();
 			break;
 		}
