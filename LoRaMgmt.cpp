@@ -49,6 +49,33 @@ generatePayload(byte *payload){
 	return payload;
 }
 
+
+static int
+xtoInt(char nChar) {
+	switch (nChar)
+	{
+		case '0' ... '9': // Digits
+			return (nChar - '0');
+		case 'a' ... 'f': // small letters a-f
+			return (nChar - 87); // 87 = a - 10
+		case 'A' ... 'F': // capital letters A-F
+			return (nChar - 55); // 55 = A - 10
+		default:	// Not a number or HEX char/terminator
+			return 0;
+	}
+}
+
+static int
+printMessage(char* rcv, int len){
+	debugSerial.print("Received: ");
+	for (unsigned int j = 0; j < len; j++) {
+		debugSerial.print(rcv[j] >> 4, HEX);
+		debugSerial.print(rcv[j] & 0xF, HEX);
+		debugSerial.print(" ");
+	}
+	debugSerial.println();
+}
+
 /*************** TEST SEND FUNCTIONS ********************/
 
 
@@ -101,33 +128,49 @@ LoRaMgmtPoll(){
 	while (modem.available() && i < MAXLORALEN) {
 		rcv[i++] = (char)modem.read();
 	}
-	debugSerial.print("Received: ");
-	for (unsigned int j = 0; j < i; j++) {
-		debugSerial.print(rcv[j] >> 4, HEX);
-		debugSerial.print(rcv[j] & 0xF, HEX);
-		debugSerial.print(" ");
-	}
-	debugSerial.println();
+	printMessage(rcv, i);
 
 	return i;
 }
 
-/*************** MANAGEMENT FUNCTIONS ********************/
-
-static int
-xtoInt(char nChar) {
-	switch (nChar)
-	{
-		case '0' ... '9': // Digits
-			return (nChar - '0');
-		case 'a' ... 'f': // small letters a-f
-			return (nChar - 87); // 87 = a - 10
-		case 'A' ... 'F': // capital letters A-F
-			return (nChar - 55); // 55 = A - 10
-		default:	// Not a number or HEX char/terminator
-			return 0;
+/*
+ * LoRaMgmtRemote: poll modem for go/stop commands
+ *
+ * Arguments: -
+ *
+ * Return:	  status of polling, 0 no message, -1 error, >0 Msg code
+ * 				1 = Start
+ * 				2 = Stop
+ */
+int
+LoRaMgmtRemote(){
+	delay(1000);
+	if (!modem.available()) {
+		// No down-link message received at this time.
+		return 0;
 	}
+	char rcv[MAXLORALEN];
+	unsigned int i = 0;
+	while (modem.available() && i < MAXLORALEN) {
+		rcv[i++] = (char)modem.read();
+	}
+
+	if (i == 1){ // one letter
+		switch(rcv[0]){
+		case 'R':
+			return 1;
+
+		case 'S':
+			return 2;
+		}
+	}
+
+	debugSerial.print("Invalid message, ");
+	printMessage(rcv, i);
+	return -1;
 }
+
+/*************** MANAGEMENT FUNCTIONS ********************/
 
 /*
  * LoRaGetChannels:

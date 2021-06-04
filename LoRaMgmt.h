@@ -34,6 +34,7 @@ int LoRaMgmtPoll();
 int LoRaMgmtUpdt();
 int LoRaMgmtRcnf();
 int LoRaMgmtTxPwr(uint8_t txPwr);
+int LoRaMgmtRemote();
 
 int LoRaMgmtGetResults(sLoRaResutls_t * res);
 char* LoRaMgmtGetEUI();
