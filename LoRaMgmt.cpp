@@ -65,8 +65,8 @@ xtoInt(char nChar) {
 	}
 }
 
-static int
-printMessage(char* rcv, int len){
+static void
+printMessage(char* rcv, uint8_t len){
 	debugSerial.print("Received: ");
 	for (unsigned int j = 0; j < len; j++) {
 		debugSerial.print(rcv[j] >> 4, HEX);
@@ -187,7 +187,7 @@ LoRaGetChannels(uint16_t * chnMsk){ // TODO: for now only EU868
 	const char * mask = modem.getChannelMask().c_str();
 
 	for (int i=0; i < min(length * 4, LORACHNMAX / 4); i++)
-	  *chnMsk |= (uint16_t)xtoInt(mask[i]) << (4*(4-i));
+	  *chnMsk |= (uint16_t)xtoInt(mask[i]) << (4*(3-i));
 
 	return (0 == *chnMsk) * -1; // error if mask is empty!
 }

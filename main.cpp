@@ -473,7 +473,7 @@ runTest(){
 		// End of tests?
 		if (trn >= &testResults[TST_MXRSLT-1] || testReq >= qStop){
 			debugSerial.print(prtSttEnd);
-			tstate = rEnd;
+			tstate = rPrint;
 			break;
 		}
 
