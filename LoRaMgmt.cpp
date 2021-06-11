@@ -232,7 +232,7 @@ LoRaMgmtSetup(){
 
 	int ret = 0;
 	ret |= !modem.dutyCycle(false); // switch off the duty cycle
-	ret |= !modem.setADR(true);		// enable ADR
+	ret |= !modem.setADR(false);	// disable ADR
 
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
@@ -259,9 +259,11 @@ LoRaMgmtSetup(){
 	// Set poll interval to 60 secs.
 	modem.minPollInterval(60);
 
-	// set to LorIoT standard RX, DR
-	ret |= !modem.setRX2Freq(869525000);
-	ret |= !modem.setRX2DR(0);
+	if (!otaa){
+		// set to LorIoT standard RX, DR
+		ret |= !modem.setRX2Freq(869525000);
+		ret |= !modem.setRX2DR(0);
+	}
 
 	return ret *-1;
 }
