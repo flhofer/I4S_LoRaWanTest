@@ -323,31 +323,23 @@ LoRaSetGblParam(bool confirm, int datalen, int OTAA){
  * LoRaSetChannels:
  *
  * Arguments: - channel enable bit mask, 0 off, 1 on
- * 			  - data rate min (ignored)
- * 			  - data rate max
+ * 			  - data rate
  *
  * Return:	  - return 0 if OK, -1 if error
  */
 int
-LoRaSetChannels(uint16_t chnMsk, uint8_t drMin, uint8_t drMax) {
+LoRaSetChannels(uint16_t chnMsk, uint8_t dr) {
 
-	bool retVal = true;
+	bool ret = true;
+	uint16_t channelsMask[6] = {0};
 
-	uint16_t mskIs;
+	channelsMask[0] = chnMsk;
 
-	retVal &= !LoRaGetChannels(&mskIs); // 0 is ok
+	modem.setMask(channelsMask);
+	ret &= modem.sendMask();
+	ret &= modem.dataRate(dr);
 
-	// match is with want, switch changes
-	for (int i=0; i<LORACHNMAX; i++, chnMsk >>=1, mskIs >>=1)
-		if ((bool) (chnMsk ^ mskIs)){
-			if ((bool)chnMsk & 0x01) {
-				retVal &= modem.enableChannel((uint8_t)i);
-				retVal &= modem.dataRate(drMax);
-			}
-			else
-				retVal &= modem.disableChannel((uint8_t)i);
-		}
-	return !retVal * -1;
+	return !ret * -1;
 }
 
 /*

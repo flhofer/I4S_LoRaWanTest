@@ -633,6 +633,11 @@ public:
     return sendMask(newMask);
   }
 
+  void setMask(uint16_t newMask[6]){
+	for (int i = 0; i < 6; i++)
+		channelsMask[i] = newMask[i];
+  }
+
   bool sendMask(String newMask) {
     return setValue(GF(AT_CHANMASK), newMask);
   }
