@@ -22,9 +22,10 @@ extern char *devAddr;
 extern char *nwkSKey;
 extern char *appSKey;
 
-int LoRaMgmtSetup();
+int LoRaMgmtSetup(bool noJoin);
 int LoRaMgmtSetupDumb(long FRQ);
 void LoRaSetGblParam(bool confirm, int datalen, int OTAA);
+int LoRaMgmtJoin();
 
 int LoRaSetChannels(uint16_t chnMsk, uint8_t dr);
 

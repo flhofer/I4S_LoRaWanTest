@@ -216,14 +216,29 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 }
 
 /*
- * LoRaMgmtSetup: setup LoRaWan communication with modem
+ * LoRaMgmtJoin: Join a LoRaWan network
  *
  * Arguments: -
  *
  * Return:	  returns 0 if successful, else -1
  */
 int
-LoRaMgmtSetup(){
+LoRaMgmtJoin(){
+	if (otaa)
+		return !modem.joinOTAA(appEui, appKey) * -1;
+	else
+		return !modem.joinABP(devAddr, nwkSKey, appSKey) * -1;
+}
+
+/*
+ * LoRaMgmtSetup: setup LoRaWan communication with modem
+ *
+ * Arguments: - noJoin, i.e. do not join the network
+ *
+ * Return:	  returns 0 if successful, else -1
+ */
+int
+LoRaMgmtSetup(bool noJoin){
 
 	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
@@ -244,13 +259,11 @@ LoRaMgmtSetup(){
 
 	modem.publicNetwork(true);
 
+	if (noJoin)
+		return ret *-1;
+
 	debugSerial.println("-- PERSONALIZE");
-	int connected;
-	if (otaa)
-		connected = modem.joinOTAA(appEui, appKey);
-	else
-		connected = modem.joinABP(devAddr, nwkSKey, appSKey);
-	if (!connected) {
+	if (LoRaMgmtJoin()) {
 		// Something went wrong; are you indoor? Move near a window and retry
 		debugSerial.println("Network join failed");
 		return -1;
@@ -337,7 +350,14 @@ LoRaSetChannels(uint16_t chnMsk, uint8_t dr) {
 
 	modem.setMask(channelsMask);
 	ret &= modem.sendMask();
-	ret &= modem.dataRate(dr);
+	if (dr == 255){
+		ret &= modem.dataRate(5);
+		ret &= modem.setADR(true);
+	}
+	else {
+		ret &= modem.setADR(false);
+		ret &= modem.dataRate((uint8_t)dr);
+	}
 
 	return !ret * -1;
 }
