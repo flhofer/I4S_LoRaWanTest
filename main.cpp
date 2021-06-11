@@ -609,7 +609,7 @@ void readInput() {
 
 		case 'C':
 			chnEnabled = readSerialH();
-			if (chnEnabled < 0x07 || chnEnabled > 0xFF ){
+			if (chnEnabled < 0x01 || chnEnabled > 0xFF ){ //TODO: this is limiting to EU868
 				debugSerial.println("Invalid channel mask [0x07-0xFFh]");
 				chnEnabled = 0xFF; // set to default
 			}
