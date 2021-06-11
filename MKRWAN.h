@@ -793,6 +793,48 @@ public:
     return (int)getIntValue(GF(AT_ADR));
   }
 
+  /*
+   * setTxConfirmed: Set confirmation (ACK) request status for send/sendB
+   *
+   * Arguments:	Boolean indicating request on/off
+   *
+   * Returns: true if successful
+   */
+  bool setTxConfirmed(bool cfm) {
+    return setValue(GF(AT_CFM), cfm);
+  }
+
+  /*
+   * send(B): default built-in sends for HEX or Binary (B) TX up-to 120/59 Bytes
+   *
+   * Parameters: pointer to Buffer
+   * 			 total length of buffer
+   *
+   * Returns : true if send was successful
+   *
+   * Notes: Uses selected confirmed/unconfirmed option of setTxConfirmed()
+   * 		the buffer must start with the application port followed by a colon,
+   * 		eg. "24:a2e3d..."
+   */
+  bool send(const void* buff, size_t len){
+	  if ((!compat_mode && len > 120)	// 128 - 'AT+SEND '
+	  			|| (compat_mode && len > 56))
+		return false;
+
+    sendAT(GF(AT_SEND " "));
+	stream.write((uint8_t*)buff, len);
+	return (waitResponse() == 1);
+  }
+
+  bool sendB(const void* buff, size_t len){
+	if ((!compat_mode && len > 119)		// 128 - 'AT+SENDB '
+			|| (compat_mode && len > 55))
+		return false;
+    sendAT(GF(AT_SENDB " "));
+	stream.write((uint8_t*)buff, len);
+	return (waitResponse() == 1);
+  }
+
   String getDevAddr() {
     return getStringValue(GF(AT_DADDR));
   }
@@ -939,7 +981,7 @@ private:
   }
 
   size_t modemGetMaxSize() {
-    if (isArduinoFW()) {
+    if (compat_mode  && isArduinoFW()) {
       return ARDUINO_LORA_MAXBUFF;
     }
 
