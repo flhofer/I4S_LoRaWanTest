@@ -312,7 +312,7 @@ runTest(){
 			trn = &testResults[0];	// Init results pointer
 
 			LoRaMgmtSetup();
-			ret |= LoRaSetChannels(chnEnabled, 0, dataRate);	// set channels
+			ret |= LoRaSetChannels(chnEnabled, dataRate);	// set channels
 			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
 
 			if (mode == 2)
