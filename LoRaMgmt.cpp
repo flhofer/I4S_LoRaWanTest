@@ -220,9 +220,9 @@ setupDumb(){
 		return -1;
 	}
 
-	LoRa.setSpreadingFactor(12);
+	LoRa.setSpreadingFactor(conf->spreadFactor);
 	LoRa.setSignalBandwidth(conf->bandWidth*1000);
-	LoRa.setCodingRate4(8);
+	LoRa.setCodingRate4(conf->codeRate);
 
 	setTxPwr(conf->txPowerTst);
 

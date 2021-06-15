@@ -33,28 +33,30 @@ typedef struct
 	// Common all Modes
 	uint8_t txPowerTst = 0;		// txPower setting for the low power test
 	uint8_t dataLen = 1;		// data length to send over LoRa for a test
-	uint8_t repeatSend = 5;					// number of send repeats
+	uint8_t repeatSend = 5;		// number of send repeats
 	union {
-		uint16_t frequency;					// LoRa / FSK frequency in 10KHz steps
-		uint16_t chnMsk;					// ChannelMask for LoRaWan EU868 (1-16)
+		uint16_t frequency;		// LoRa / FSK frequency in 10KHz steps
+		uint16_t chnMsk;		// ChannelMask for LoRaWan EU868 (1-16)
 	};
 	union {
-		uint8_t dataRate = 255;				// data rate starting value for LoRaWan, 255 = leave unchanged
-		uint8_t bandWidth;					// Bandwidth setting for LoRa & FSK TODO: create steps
+		uint8_t dataRate = 255;	// data rate starting value for LoRaWan, 255 = leave unchanged
+		uint8_t spreadFactor;	// spread factor for Chirp signals FSK/LORA
 	};
 
-	// LoRaWan Only, OTAA vs ABP
+	// LoRaWan (OTAA vs ABP) or LoRa/FSK settings
 	union {
-		char * devEui = NULL;    /*< Device EUI */
-		char * devAddr;          /*< Device Address */ // WAS uint32_t
+		uint8_t bandWidth;		// Bandwidth setting for LoRa & FSK TODO: create steps
+		char * devEui = NULL;   // Device EUI OTAA
+		char * devAddr;         // Device Address ABP
 	};
 	union {
-		char * appEui = NULL;   /*< Application EUI */
-		char * nwkSKey;         /*< Network Session Key */
+		uint8_t	codeRate;		// Code rate for LoRa & FSK, in 4/
+		char * appEui = NULL;   // App EUI OTAA
+		char * nwkSKey;         // Nw Session key ABP
 	};
 	union {
-		char * appKey = NULL;   /*< Application Key */
-		char * appSKey;         /*< Application Session Key */
+		char * appKey = NULL;   // App KEY OTAA
+		char * appSKey;         // App Session key ABP
 	};
 //	uint32_t NetworkID;          /*< Network ID */
 
