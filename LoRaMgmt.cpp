@@ -16,20 +16,10 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 
 #define freqPlan EU868
 
-// DevAddr, NwkSKey, AppSKey and the frequency plan
-char *appEui = NULL;
-char *appKey = NULL;
-char *devAddr = NULL;
-char *nwkSKey = NULL;
-char *appSKey = NULL;
-char *devEUI = NULL;
-
-bool conf = false;			// use confirmed messages
-bool otaa = false;			// use otaa join
-int dataLen = 1; 			// TX data length for tests
-
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
+
+static loraConfiguration_t * conf;
 
 /********************** HELPERS ************************/
 
@@ -43,7 +33,7 @@ static byte genbuf[MAXLORALEN];			// buffer for generated message
 static byte *
 generatePayload(byte *payload){
 
-	for (int i=0; i < dataLen; i++, payload++)
+	for (int i=0; i < conf->dataLen; i++, payload++)
 		*payload=(byte)(rand_r(&rnd_contex) % 255);
 
 	return payload;
@@ -89,7 +79,7 @@ printMessage(char* rcv, uint8_t len){
 int
 LoRaMgmtSend(){
 	modem.beginPacket();
-	modem.write(genbuf, dataLen);
+	modem.write(genbuf, conf->dataLen);
 	return modem.endPacket(conf);
 }
 
@@ -105,7 +95,7 @@ LoRaMgmtSendDumb(){
 	while (LoRa.beginPacket() == 0) {
 	  delay(1);
 	}
-	LoRa.write(genbuf, dataLen);
+	LoRa.write(genbuf, conf->dataLen);
 	return LoRa.endPacket(true); // true = async / non-blocking mode
 }
 
@@ -224,21 +214,21 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
  */
 int
 LoRaMgmtJoin(){
-	if (otaa)
+	if (conf->confMsk & CM_OTAA)
 		return !modem.joinOTAA(appEui, appKey) * -1;
 	else
 		return !modem.joinABP(devAddr, nwkSKey, appSKey) * -1;
 }
 
 /*
- * LoRaMgmtSetup: setup LoRaWan communication with modem
+ * setupLoRaWan: setup LoRaWan communication with modem
  *
- * Arguments: - noJoin, i.e. do not join the network
+ * Arguments: -
  *
  * Return:	  returns 0 if successful, else -1
  */
-int
-LoRaMgmtSetup(bool noJoin){
+static int
+setupLoRaWan(){
 
 	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
@@ -252,14 +242,14 @@ LoRaMgmtSetup(bool noJoin){
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
 	debugSerial.print("Your device EUI is: ");
-	if (!devEUI){
-		devEUI = strdup(modem.deviceEUI().c_str());
+	if (!conf->DevEui){
+		conf->DevEui = strdup(modem.deviceEUI().c_str());
 	}
-	debugSerial.println(devEUI);
+	debugSerial.println(conf->DevEui);
 
-	modem.publicNetwork(true);
+	modem.publicNetwork(!(conf->confMsk & CM_NPBLK));
 
-	if (noJoin)
+	if (conf->confMsk & CM_RJN)
 		return ret *-1;
 
 	debugSerial.println("-- PERSONALIZE");
@@ -272,7 +262,7 @@ LoRaMgmtSetup(bool noJoin){
 	// Set poll interval to 60 secs.
 	modem.minPollInterval(60);
 
-	if (!otaa){
+	if (!(conf->confMsk & CM_OTAA)){
 		// set to LorIoT standard RX, DR
 		ret |= !modem.setRX2Freq(869525000);
 		ret |= !modem.setRX2DR(0);
@@ -282,14 +272,43 @@ LoRaMgmtSetup(bool noJoin){
 }
 
 /*
- * LoRaMgmtSetup: setup LoRaWan communication with modem
+ * setChannels:
+ *
+ * Arguments: -
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
+static int
+setChannels() {
+
+	bool ret = true;
+	uint16_t channelsMask[6] = {0};
+
+	channelsMask[0] = chnMsk;
+
+	modem.setMask(channelsMask);
+	ret &= modem.sendMask();
+	if (dr == 255){
+		ret &= modem.dataRate(5);
+		ret &= modem.setADR(true);
+	}
+	else {
+		ret &= modem.setADR(false);
+		ret &= modem.dataRate((uint8_t)dr);
+	}
+
+	return !ret * -1;
+}
+
+/*
+ * setupDumb: setup LoRa communication with modem
  *
  * Arguments: -
  *
  * Return:	  - return 0 if OK, -1 if error
  */
 int
-LoRaMgmtSetupDumb(long FRQ){
+setupDumb(){
 
 	modem.dumb();
 
@@ -310,57 +329,30 @@ LoRaMgmtSetupDumb(long FRQ){
 }
 
 /*
- * LoRaSetGblParam: set generic parameters, re-init random seed
+ * LoRaMgmtSetup: setup LoRaWan communication with modem
  *
- * Arguments: - confirmed send yes/no
- * 			  - simulated payload length
- * 			  - Use OTAA?
+ * Arguments: - noJoin, i.e. do not join the network
  *
- * Return:	  -
- */
-void
-LoRaSetGblParam(bool confirm, int datalen, int OTAA){
-	conf = confirm;
-	otaa = (OTAA);
-	// set boundaries for len value
-	dataLen = max(min(datalen, MAXLORALEN), 1);
-
-	// initialize random seed with datalen as value
-	// keep consistency among tests, but differs with diff len
-	rnd_contex = dataLen;
-	// Prepare PayLoad of x bytes
-	(void)generatePayload(genbuf);
-}
-
-/*
- * LoRaSetChannels:
- *
- * Arguments: - channel enable bit mask, 0 off, 1 on
- * 			  - data rate
- *
- * Return:	  - return 0 if OK, -1 if error
+ * Return:	  returns 0 if successful, else -1
  */
 int
-LoRaSetChannels(uint16_t chnMsk, uint8_t dr) {
+LoRaMgmtSetup(loraConfiguration_t * conf){
+	setupLoRaWan();
+	setChannels();
 
-	bool ret = true;
-	uint16_t channelsMask[6] = {0};
-
-	channelsMask[0] = chnMsk;
-
-	modem.setMask(channelsMask);
-	ret &= modem.sendMask();
-	if (dr == 255){
-		ret &= modem.dataRate(5);
-		ret &= modem.setADR(true);
-	}
-	else {
-		ret &= modem.setADR(false);
-		ret &= modem.dataRate((uint8_t)dr);
-	}
-
-	return !ret * -1;
+	//	// set boundaries for len value
+	//	dataLen = max(min(datalen, MAXLORALEN), 1);
+	//
+	//	// initialize random seed with datalen as value
+	//	// keep consistency among tests, but differs with diff len
+	//	rnd_contex = dataLen;
+	//	// Prepare PayLoad of x bytes
+	//	(void)generatePayload(genbuf);
 }
+
+
+
+
 
 /*
  * LoRaMgmtUpdt: update LoRa message buffer
@@ -404,8 +396,8 @@ LoRaMgmtTxPwr(uint8_t txPwr){
 }
 
 char* LoRaMgmtGetEUI(){
-	if (!devEUI){
-		LoRaMgmtSetup();
+	if (!conf->DevEui){
+		LoRaMgmtSetup(NULL);
 	}
-	return devEUI;
+	return conf->DevEui;
 }
