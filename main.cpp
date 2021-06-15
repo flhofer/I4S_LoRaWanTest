@@ -44,21 +44,12 @@ const char prtTblTms[] PROGMEM = " ms";
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
 static sLoRaResutls_t * trn;					// Pointer to actual entry
 static uint8_t actChan = 16;					// active channels
-
-// Generic Settings
-static uint8_t mode = 2;						// test mode = 0 off, 1 LoRa, 2 LoRaWan, (3-5 Reserved Tone Tests)
-static long Frequency = 868300000;				// Frequency of dumb LoRa mode
 static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
 
-// LoRaWan settings
-static bool confirmed = true;					// confirmed messaging?
-static bool otaa = false;						// use OTAA join instead of ABP
-static uint16_t chnEnabled = 0xFF;				// Channels enabled mask for LoRaWan mode tests
-static uint8_t txPowerTst = 0;					// txPower setting for the low power test
-static uint8_t dataLen = 1;						// data length to send over LoRa for a test
-static uint8_t dataRate = 5;					// data rate starting value
-static uint8_t repeatSend = 5;					// number of send repeats
+static sLoRaConfiguration_t newConf;			// test Configuration
+static char keyArray[43];						// static array containing init keys
+static char * keyArrayP;						// pointer to key array
 
 /* 	Globals		*/
 
@@ -139,7 +130,7 @@ printTestResultsDumb(){
  *
  * Return:		- Hex string
  */
-static void
+static char *
 readSerialS(char * retVal, int len){
 	char nChar;
 	int pos = 0;
@@ -166,10 +157,11 @@ readSerialS(char * retVal, int len){
 				// @suppress("No break at end of case")
 			default:	// Not a number or HEX char/terminator
 				retVal[pos] = '\0';
-				return;
+				return (void*)retVal+pos+1;
 		}
 	}
-	return;
+	retVal[pos-1] = '\0';
+	return (void*)retVal+pos;
 }
 
 /*
@@ -248,10 +240,12 @@ typedef enum { 	rError = -1,
 				rOff,
 				rDumb,
 
-				rWaitLoRa = 5,
+				rJoin =5, //	 Join-Bomb
+				rWaitLoRa,
 				rStart,
 				rRun,
 				rStop,
+
 
 				rEvaluate = 15,
 				rReset,
@@ -286,50 +280,44 @@ runTest(){
 	switch(tstate){
 
 	case rInit:
+		txCnt = 0;
 
+		// reset status on next test
+		memset(testResults,0, sizeof(testResults));
+		trn = &testResults[0];	// Init results pointer
 
-		// Set global test parameters
-		LoRaSetGblParam(confirmed, dataLen, otaa);
+		{	// enter new locality
 
-		switch (mode)
-		{
-		case 0 : // off- mute
-			tstate = rOff;
-			break;
+			// Allocate on stack a new configuration
 
-		default:
-		case 1 : // dumb LoRa
-			ret |= LoRaMgmtSetupDumb(Frequency);	// set frequency
+			switch (newConf.mode)
+			{
+			default:
+			case 0 : // off- mute
+				tstate = rOff;
+				break;
+			case 1 : // dumb LoRa
 
-			txCnt = 0;
-			tstate = rDumb;
-			break;
-
-		case 2 : // LoRaWan
-		case 3 : // LoRaRemote
-			// reset status on next test
-			memset(testResults,0, sizeof(testResults));
-			trn = &testResults[0];	// Init results pointer
-
-			LoRaMgmtSetup();
-			ret |= LoRaSetChannels(chnEnabled, dataRate);	// set channels
-			ret |= LoRaMgmtTxPwr(txPowerTst);	// set power index;
-
-			if (mode == 2)
+				tstate = rDumb;
+				break;
+			case 2 :  // LoRaWan
 				tstate = rStart;
-			else
+				break;
+			case 3 : // LoRaRemote
 				tstate = rWaitLoRa;
-			break;
-		// placeholder future modes.. test ecc
-		}
+				break;
+			case 4 : // LoRaWan force Join
+				tstate = rJoin;
+				break;
+			}
 
-		if (ret)
-		{
-			tstate = rError;
-			debugSerial.print(prtSttErrExec);
-			break;
+			if (LoRaMgmtSetup(&newConf))
+			{
+				tstate = rError;
+				debugSerial.print(prtSttErrExec);
+				break;
+			}
 		}
-
 		debugSerial.print(prtSttStart);
 		startTs = millis();
 		break;
@@ -339,7 +327,7 @@ runTest(){
 	 */
 
 	case rDumb:
-		(void)LoRaMgmtSendDumb();
+		(void)LoRaMgmtSend(); // TODO: this is now a single call
 		txCnt++;
 		// fall-through
 		// @suppress("No break at end of case")
@@ -354,6 +342,15 @@ runTest(){
 	/*
 	 * LoRaWan execution states
 	 */
+
+	case rJoin:
+		LoRaMgmtJoin();
+		txCnt++;
+		if (testReq >= qStop ){
+			tstate = rPrint;
+			durationTest = millis() - startTs;
+		}
+		break;
 
 	case rWaitLoRa:
 		// delay in mgmt - 1000ms
@@ -499,6 +496,7 @@ runTest(){
 
 		default:
 		case 1:
+		case 4:
 			printTestResultsDumb();
 			break;
 
@@ -537,48 +535,53 @@ void readInput() {
 		switch (A){
 
 		case 'm': // read test mode
-			mode = (uint8_t)readSerialD();
-			if (mode > 2){
-				debugSerial.println("Invalid mode [0-2]");
-				mode = 2; // set to default
+			newConf.mode = (uint8_t)readSerialD();
+			if (newConf.mode > 4){
+				debugSerial.println("Invalid mode [0-4]");
+				newConf.mode = 0; // set to default
 			}
+			keyArray[0]='\0';
+			keyArrayP = keyArray;
+			newConf.devEui = NULL;
 			break;
 
-		case 'f':
-			Frequency = (long)readSerialD() * 100000;
-			if (Frequency < 863000000 || Frequency > 870000000 ){
+		case 'f': //TODO: this is limiting to EU868
+			newConf.frequency = (long)readSerialD(); // TODO: 10 vs 100kHz
+			if (newConf.frequency < 8630 || newConf.frequency > 8700 ){
 				debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
-				Frequency = 868300000; // set to default
+				newConf.frequency = 868300000; // set to default
 			}
 			break;
 
 		case 'c': // set to confirmed
-			confirmed = true;
+			newConf.chnMsk &= ~CM_UCNF;
 			break;
 		case 'u': // set to unconfirmed
-			confirmed = false;
+			newConf.chnMsk |= CM_UCNF;
 			break;
 
 		case 'o': // set to otaa
-			otaa = true;
+			newConf.chnMsk |= CM_OTAA;
 			break;
 		case 'a': // set to abp
-			otaa = false;
+			newConf.chnMsk &= ~CM_OTAA;
 			break;
 
 		case 'N': // Network session key for ABP
-			readSerialS(nwkSKey, 32);
-			if (strlen(nwkSKey) < 32){
+			newConf.nwkSKey = keyArrayP;
+			keyArrayP = readSerialS(newConf.nwkSKey, 32);
+			if (strlen(newConf.nwkSKey) < 32){
 				debugSerial.println("Invalid network session key");
-				strcpy(nwkSKey, LORA_NWSKEY);
+				strcpy(newConf.nwkSKey, LORA_NWSKEY);
 			}
 			break;
 
 		case 'A': // Application session key for ABP
-			 readSerialS(appSKey, 32);
-			if (strlen(appSKey) < 32){
+			newConf.appSKey = keyArrayP;
+			keyArrayP = readSerialS(newConf.appSKey, 32);
+			if (strlen(newConf.appSKey) < 32){
 				debugSerial.println("Invalid application session key");
-				strcpy(appSKey, LORA_APSKEY);
+				strcpy(newConf.appSKey, LORA_APSKEY);
 
 			}
 			break;
@@ -617,7 +620,7 @@ void readInput() {
 
 		case 'p': // read Tx power index
 			txPowerTst = (uint8_t)readSerialD();
-			if (txPowerTst > 5 ){
+			if (txPowerTst > 5 ){ //TODO: this is limiting to EU868
 				debugSerial.println("Invalid power level [0-5]");
 				txPowerTst = 0; // set to default
 			}
@@ -701,12 +704,6 @@ void setup()
 
 	debugSerial.print(prtSttSelect);
 	debugSerial.flush();
-
-	appEui  = strdup(LORA_APPEUI);
-	appKey  = strdup(LORA_APPKEY);
-	devAddr = strdup(LORA_DEVADDR);
-	nwkSKey = strdup(LORA_NWSKEY);
-	appSKey = strdup(LORA_APSKEY);
 }
 
 /*
