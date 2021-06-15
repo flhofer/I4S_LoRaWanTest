@@ -66,6 +66,89 @@ printMessage(char* rcv, uint8_t len){
 	debugSerial.println();
 }
 
+/*
+ * setTxPwr: set power index on modem
+ *
+ * Arguments: -
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
+static int
+setTxPwr(uint8_t txPwr){
+	if (conf->mode < 2){
+		// Transform the powerIndex to power in dBm
+		int npwr = 0;
+		switch (txPwr) {
+		case 1 : npwr = 14;
+				break;
+		case 2 : npwr = 11;
+				break;
+		case 3 : npwr = 8;
+				break;
+		case 4 : npwr = 5;
+				break;
+		case 5 : npwr = 2;
+				break;
+		case 0 : LoRa.setTxPower(20, PA_OUTPUT_PA_BOOST_PIN); // MAX level
+				return 0;
+		}
+		LoRa.setTxPower(npwr, PA_OUTPUT_RFO_PIN); // MAX RFO level
+		return 0;
+	}
+	else
+		return modem.power((txPwr == 20)? PABOOST : RFO, txPwr) ? 0 : -1;
+}
+
+/*
+ * getChannels:
+ *
+ * Arguments: - pointer to channel enable bit mask to fill, 0 off, 1 on
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
+static int
+getChannels(uint16_t * chnMsk){ // TODO: for now only EU868
+
+	*chnMsk = 0;
+	int length = modem.getChannelMaskSize(freqPlan);
+	const char * mask = modem.getChannelMask().c_str();
+
+	for (int i=0; i < min(length * 4, LORACHNMAX / 4); i++)
+	  *chnMsk |= (uint16_t)xtoInt(mask[i]) << (4*(3-i));
+
+	return (0 == *chnMsk) * -1; // error if mask is empty!
+}
+
+/*
+ * setChannels:
+ *
+ * Arguments: - pointer to channel enable bit mask to use, 0 off, 1 on
+ * 			  - dataRate for test start, (disables ADR)
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
+static int
+setChannels(uint16_t * chnMsk, uint8_t dataRate) {
+
+	bool ret = true;
+	uint16_t channelsMask[6] = {0};
+
+	channelsMask[0] = chnMsk;
+
+	modem.setMask(channelsMask);
+	ret &= modem.sendMask();
+	if (dataRate == 255){
+		ret &= modem.dataRate(5);
+		ret &= modem.setADR(true);
+	}
+	else {
+		ret &= modem.setADR(false);
+		ret &= modem.dataRate(dataRate);
+	}
+
+	return !ret * -1;
+}
+
 /*************** TEST SEND FUNCTIONS ********************/
 
 
@@ -163,26 +246,6 @@ LoRaMgmtRemote(){
 /*************** MANAGEMENT FUNCTIONS ********************/
 
 /*
- * LoRaGetChannels:
- *
- * Arguments: - pointer to channel enable bit mask to fill, 0 off, 1 on
- *
- * Return:	  - return 0 if OK, -1 if error
- */
-static int
-LoRaGetChannels(uint16_t * chnMsk){ // TODO: for now only EU868
-
-	*chnMsk = 0;
-	int length = modem.getChannelMaskSize(freqPlan);
-	const char * mask = modem.getChannelMask().c_str();
-
-	for (int i=0; i < min(length * 4, LORACHNMAX / 4); i++)
-	  *chnMsk |= (uint16_t)xtoInt(mask[i]) << (4*(3-i));
-
-	return (0 == *chnMsk) * -1; // error if mask is empty!
-}
-
-/*
  * LoRaMgmtGetResults: getter for last experiment results
  *
  * Arguments: - pointer to Structure for the result data
@@ -196,7 +259,7 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 //	res->timeRx = timeRx;
 //	res->timeToRx = timeToRx;
 //	res->txFrq = ttn.getFrequency();
-	ret |= LoRaGetChannels(&res->chnMsk);
+	ret |= getChannels(&res->chnMsk);
 //	res->lastCR = ttn.getCR();
 	res->txDR = modem.getDataRate();
 	res->txPwr = modem.getPower();
@@ -272,35 +335,6 @@ setupLoRaWan(){
 }
 
 /*
- * setChannels:
- *
- * Arguments: -
- *
- * Return:	  - return 0 if OK, -1 if error
- */
-static int
-setChannels() {
-
-	bool ret = true;
-	uint16_t channelsMask[6] = {0};
-
-	channelsMask[0] = chnMsk;
-
-	modem.setMask(channelsMask);
-	ret &= modem.sendMask();
-	if (dr == 255){
-		ret &= modem.dataRate(5);
-		ret &= modem.setADR(true);
-	}
-	else {
-		ret &= modem.setADR(false);
-		ret &= modem.dataRate((uint8_t)dr);
-	}
-
-	return !ret * -1;
-}
-
-/*
  * setupDumb: setup LoRa communication with modem
  *
  * Arguments: -
@@ -314,17 +348,17 @@ setupDumb(){
 
 	// Configure LoRa module to transmit and receive at 915MHz (915*10^6)
 	// Replace 915E6 with the frequency you need (eg. 433E6 for 433MHz)
-	if (!LoRa.begin(FRQ)) {
+	if (!LoRa.begin((long)conf->frequency * 10000)) {
 		debugSerial.println("Starting LoRa failed!");
 		return 1;
 	}
 
-	// TODO: defaults for now
 	LoRa.setSpreadingFactor(12);
-	LoRa.setSignalBandwidth(125000);
+	LoRa.setSignalBandwidth(conf->bandWidth*1000);
 	LoRa.setCodingRate4(8);
 
-	LoRa.setTxPower(14, PA_OUTPUT_RFO_PIN); // MAX RFO level
+	setTxPwr(conf->txPowerTst);
+
 	return 0;
 }
 
@@ -340,19 +374,17 @@ LoRaMgmtSetup(loraConfiguration_t * conf){
 	setupLoRaWan();
 	setChannels();
 
-	//	// set boundaries for len value
-	//	dataLen = max(min(datalen, MAXLORALEN), 1);
-	//
-	//	// initialize random seed with datalen as value
-	//	// keep consistency among tests, but differs with diff len
-	//	rnd_contex = dataLen;
-	//	// Prepare PayLoad of x bytes
-	//	(void)generatePayload(genbuf);
+	// set boundaries for len value
+	conf->dataLen = max(min(conf->dataLen, MAXLORALEN), 1);
+
+	// initialize random seed with dataLen as value
+	// keep consistency among tests, but differs with diff len
+	rnd_contex = conf->dataLen;
+	// Prepare PayLoad of x bytes
+	(void)generatePayload(genbuf);
+
+	return 0;
 }
-
-
-
-
 
 /*
  * LoRaMgmtUpdt: update LoRa message buffer
@@ -383,17 +415,6 @@ LoRaMgmtRcnf(){
 	return 0;
 }
 
-/*
- * LoRaMgmtTxPwr: set power index on modem
- *
- * Arguments: -
- *
- * Return:	  - return 0 if OK, -1 if error
- */
-int
-LoRaMgmtTxPwr(uint8_t txPwr){
-	return modem.power(RFO, txPwr) ? 0 : -1;
-}
 
 char* LoRaMgmtGetEUI(){
 	if (!conf->DevEui){
