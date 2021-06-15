@@ -19,7 +19,7 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
-static loraConfiguration_t * conf;
+static sLoRaConfiguration_t * conf;
 
 /********************** HELPERS ************************/
 
@@ -75,7 +75,7 @@ printMessage(char* rcv, uint8_t len){
  */
 static int
 setTxPwr(uint8_t txPwr){
-	if (conf->mode < 2){
+	if (conf->mode == 1){
 		// Transform the powerIndex to power in dBm
 		int npwr = 0;
 		switch (txPwr) {
@@ -95,8 +95,9 @@ setTxPwr(uint8_t txPwr){
 		LoRa.setTxPower(npwr, PA_OUTPUT_RFO_PIN); // MAX RFO level
 		return 0;
 	}
-	else
+	else if (conf->mode > 1)
 		return modem.power((txPwr == 20)? PABOOST : RFO, txPwr) ? 0 : -1;
+	return 0;
 }
 
 /*
@@ -128,7 +129,7 @@ getChannels(uint16_t * chnMsk){ // TODO: for now only EU868
  * Return:	  - return 0 if OK, -1 if error
  */
 static int
-setChannels(uint16_t * chnMsk, uint8_t dataRate) {
+setChannels(uint16_t chnMsk, uint8_t dataRate) {
 
 	bool ret = true;
 	uint16_t channelsMask[6] = {0};
@@ -149,6 +150,85 @@ setChannels(uint16_t * chnMsk, uint8_t dataRate) {
 	return !ret * -1;
 }
 
+/*
+ * setupLoRaWan: setup LoRaWan communication with modem
+ *
+ * Arguments: -
+ *
+ * Return:	  returns 0 if successful, else -1
+ */
+static int
+setupLoRaWan(){
+
+	if (!modem.begin(freqPlan)) {
+		debugSerial.println("Failed to start module");
+		return -1;
+	};
+
+	int ret = 0;
+	ret |= !modem.dutyCycle(false); // switch off the duty cycle
+	ret |= !modem.setADR(false);	// disable ADR
+
+	debugSerial.print("Your module version is: ");
+	debugSerial.println(modem.version());
+	debugSerial.print("Your device EUI is: ");
+	if (!conf->devEui){
+		conf->devEui = strdup(modem.deviceEUI().c_str());
+	}
+	debugSerial.println(conf->devEui);
+
+	modem.publicNetwork(!(conf->confMsk & CM_NPBLK));
+
+	if (conf->confMsk & CM_RJN)
+		return ret *-1;
+
+	debugSerial.println("-- PERSONALIZE");
+	if (LoRaMgmtJoin()) {
+		// Something went wrong; are you indoor? Move near a window and retry
+		debugSerial.println("Network join failed");
+		return -1;
+	}
+
+	// Set poll interval to 60 secs.
+	modem.minPollInterval(60);
+
+	if (!(conf->confMsk & CM_OTAA)){
+		// set to LorIoT standard RX, DR
+		ret |= !modem.setRX2Freq(869525000);
+		ret |= !modem.setRX2DR(0);
+	}
+
+	return ret *-1;
+}
+
+/*
+ * setupDumb: setup LoRa communication with modem
+ *
+ * Arguments: -
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
+int
+setupDumb(){
+
+	modem.dumb();
+
+	// Configure LoRa module to transmit and receive at 915MHz (915*10^6)
+	// Replace 915E6 with the frequency you need (eg. 433E6 for 433MHz)
+	if (!LoRa.begin((long)conf->frequency * 10000)) {
+		debugSerial.println("Starting LoRa failed!");
+		return -1;
+	}
+
+	LoRa.setSpreadingFactor(12);
+	LoRa.setSignalBandwidth(conf->bandWidth*1000);
+	LoRa.setCodingRate4(8);
+
+	setTxPwr(conf->txPowerTst);
+
+	return 0;
+}
+
 /*************** TEST SEND FUNCTIONS ********************/
 
 
@@ -161,25 +241,19 @@ setChannels(uint16_t * chnMsk, uint8_t dataRate) {
  */
 int
 LoRaMgmtSend(){
-	modem.beginPacket();
-	modem.write(genbuf, conf->dataLen);
-	return modem.endPacket(conf);
-}
-
-/*
- * LoRaMgmtSendDumb: send a message with the defined mode
- *
- * Arguments: -
- *
- * Return:	  status of sending, >0 ok (no of bytes), <0 error
- */
-int
-LoRaMgmtSendDumb(){
-	while (LoRa.beginPacket() == 0) {
-	  delay(1);
+	if (conf->mode == 1) {
+		while (LoRa.beginPacket() == 0) {
+		  delay(1);
+		}
+		LoRa.write(genbuf, conf->dataLen);
+		return LoRa.endPacket(true); // true = async / non-blocking mode
 	}
-	LoRa.write(genbuf, conf->dataLen);
-	return LoRa.endPacket(true); // true = async / non-blocking mode
+	else
+	{
+		modem.beginPacket();
+		modem.write(genbuf, conf->dataLen);
+		return modem.endPacket(conf);
+	}
 }
 
 /*
@@ -278,88 +352,9 @@ LoRaMgmtGetResults(sLoRaResutls_t * res){
 int
 LoRaMgmtJoin(){
 	if (conf->confMsk & CM_OTAA)
-		return !modem.joinOTAA(appEui, appKey) * -1;
+		return !modem.joinOTAA(conf->appEui, conf->appKey) * -1;
 	else
-		return !modem.joinABP(devAddr, nwkSKey, appSKey) * -1;
-}
-
-/*
- * setupLoRaWan: setup LoRaWan communication with modem
- *
- * Arguments: -
- *
- * Return:	  returns 0 if successful, else -1
- */
-static int
-setupLoRaWan(){
-
-	if (!modem.begin(freqPlan)) {
-		debugSerial.println("Failed to start module");
-		return -1;
-	};
-
-	int ret = 0;
-	ret |= !modem.dutyCycle(false); // switch off the duty cycle
-	ret |= !modem.setADR(false);	// disable ADR
-
-	debugSerial.print("Your module version is: ");
-	debugSerial.println(modem.version());
-	debugSerial.print("Your device EUI is: ");
-	if (!conf->DevEui){
-		conf->DevEui = strdup(modem.deviceEUI().c_str());
-	}
-	debugSerial.println(conf->DevEui);
-
-	modem.publicNetwork(!(conf->confMsk & CM_NPBLK));
-
-	if (conf->confMsk & CM_RJN)
-		return ret *-1;
-
-	debugSerial.println("-- PERSONALIZE");
-	if (LoRaMgmtJoin()) {
-		// Something went wrong; are you indoor? Move near a window and retry
-		debugSerial.println("Network join failed");
-		return -1;
-	}
-
-	// Set poll interval to 60 secs.
-	modem.minPollInterval(60);
-
-	if (!(conf->confMsk & CM_OTAA)){
-		// set to LorIoT standard RX, DR
-		ret |= !modem.setRX2Freq(869525000);
-		ret |= !modem.setRX2DR(0);
-	}
-
-	return ret *-1;
-}
-
-/*
- * setupDumb: setup LoRa communication with modem
- *
- * Arguments: -
- *
- * Return:	  - return 0 if OK, -1 if error
- */
-int
-setupDumb(){
-
-	modem.dumb();
-
-	// Configure LoRa module to transmit and receive at 915MHz (915*10^6)
-	// Replace 915E6 with the frequency you need (eg. 433E6 for 433MHz)
-	if (!LoRa.begin((long)conf->frequency * 10000)) {
-		debugSerial.println("Starting LoRa failed!");
-		return 1;
-	}
-
-	LoRa.setSpreadingFactor(12);
-	LoRa.setSignalBandwidth(conf->bandWidth*1000);
-	LoRa.setCodingRate4(8);
-
-	setTxPwr(conf->txPowerTst);
-
-	return 0;
+		return !modem.joinABP(conf->devAddr, conf->nwkSKey, conf->appSKey) * -1;
 }
 
 /*
@@ -370,9 +365,21 @@ setupDumb(){
  * Return:	  returns 0 if successful, else -1
  */
 int
-LoRaMgmtSetup(loraConfiguration_t * conf){
-	setupLoRaWan();
-	setChannels();
+LoRaMgmtSetup(sLoRaConfiguration_t * conf){
+	int ret = 0;
+	switch (conf->mode){
+	case 0: ;
+			break;
+	case 1: ret = setupDumb();
+			break;
+	default:
+	case 2:
+	case 3:
+	case 4:
+			ret = setupLoRaWan();
+			setChannels(conf->chnMsk, conf->dataRate);
+	}
+	setTxPwr(conf->txPowerTst);
 
 	// set boundaries for len value
 	conf->dataLen = max(min(conf->dataLen, MAXLORALEN), 1);
@@ -410,15 +417,15 @@ LoRaMgmtUpdt(){
  */
 int
 LoRaMgmtRcnf(){
-	if (conf)
+	if (!(conf->confMsk & CM_UCNF))
 		return modem.restart() ? 0 : -1;
 	return 0;
 }
 
 
 char* LoRaMgmtGetEUI(){
-	if (!conf->DevEui){
-		LoRaMgmtSetup(NULL);
+	if (!conf->devEui){
+		setupLoRaWan();
 	}
-	return conf->DevEui;
+	return conf->devEui;
 }

@@ -16,13 +16,6 @@
 #define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
 
-// TODO: Remove
-extern char *appEui;
-extern char *appKey;
-extern char *devAddr;
-extern char *nwkSKey;
-extern char *appSKey;
-
 #define CM_OTAA			1		// LORAWAN use OTAA join instead of ABP
 #define CM_DTYCL		2		// LORAWAN enable duty cycle
 #define CM_RJN	 		4		// LORAWAN rejoin if failed
@@ -52,29 +45,43 @@ typedef struct
 
 	// LoRaWan Only, OTAA vs ABP
 	union {
-		char * DevEui = NULL;    /*< Device EUI */
-		char * DevAddr;          /*< Device Address */ // WAS uint32_t
+		char * devEui = NULL;    /*< Device EUI */
+		char * devAddr;          /*< Device Address */ // WAS uint32_t
 	};
 	union {
-		char * AppEui = NULL;   /*< Application EUI */
-		char * NwkSKey;         /*< Network Session Key */
+		char * appEui = NULL;   /*< Application EUI */
+		char * nwkSKey;         /*< Network Session Key */
 	};
 	union {
-		char * AppKey = NULL;   /*< Application Key */
-		char * AppSKey;         /*< Application Session Key */
+		char * appKey = NULL;   /*< Application Key */
+		char * appSKey;         /*< Application Session Key */
 	};
 //	uint32_t NetworkID;          /*< Network ID */
 
-} loraConfiguration_t;
+} sLoRaConfiguration_t;
 
-int LoRaMgmtSetup(loraConfiguration_t * conf);
+//add your function definitions for the project LoRaWanTest here
+// global types
+typedef struct {
+	uint32_t timeTx;
+	uint32_t timeRx;		// one of the two may be removed
+	uint32_t timeToRx;
+	uint32_t txFrq;			// current used frequency
+	uint16_t chnMsk;		// Concluding channel mask
+	uint8_t lastCR;			// Coding rate 4/x
+	uint8_t txDR;			// Tx data rate
+	int8_t txPwr;			// Tx power index used
+	int8_t rxRssi;			// last rx RSSI, default -128
+	uint8_t rxSnr;			// last rx SNR, default -128
+} sLoRaResutls_t;
+
+int LoRaMgmtSetup(sLoRaConfiguration_t * conf);
 int LoRaMgmtJoin();
 
 int LoRaMgmtSend();
 int LoRaMgmtPoll();
 int LoRaMgmtUpdt();
 int LoRaMgmtRcnf();
-int LoRaMgmtTxPwr(uint8_t txPwr);
 int LoRaMgmtRemote();
 
 int LoRaMgmtGetResults(sLoRaResutls_t * res);
