@@ -285,7 +285,7 @@ static const char LORA_ERROR_NO_NETWORK[] = "+ERR_NO_NETWORK";
 static const char LORA_ERROR_RX[] = "+ERR_RX";
 static const char LORA_ERROR_UNKNOWN[] = "+ERR_UNKNOWN";
 
-static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.4";
+static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.4a";
 static const char ARDUINO_FW_VERSION_AT[] = "ARD-078 1.2.4";
 static const char ARDUINO_FW_IDENTIFIER[] = "ARD-078";
 
@@ -363,6 +363,12 @@ private:
   _lora_band    region;
   bool			compat_mode;
   size_t		msize;
+
+  // callbacks!
+  void (*messageCallback)(size_t size, bool binary);
+  void (*beforeTxCallback)(void);
+  void (*afterTxCallback)(void);
+  void (*afterRxCallback)(void);
 
 public:
   virtual int joinOTAA(const char *appEui, const char *appKey, const char *devEui, uint32_t timeout) {
@@ -896,6 +902,26 @@ public:
     return getIntValue(GF(AT_CFS)) == 1;
   }
 
+  void onMessage(void (*cb)(size_t size, bool binary))
+  {
+    messageCallback = cb;
+  }
+
+  void onBeforeTx(void (*cb)(void))
+  {
+    beforeTxCallback = cb;
+  }
+
+  void onAfterTx(void (*cb)(void))
+  {
+    afterTxCallback = cb;
+  }
+
+  void onAfterRx(void (*cb)(void))
+  {
+    afterRxCallback = cb;
+  }
+
 private:
 
   bool isArduinoFW() {
@@ -967,6 +993,8 @@ private:
         return -20;
     }
 
+    if (beforeTxCallback)
+  	  beforeTxCallback();
     if (confirmed) {
         sendAT(GF(AT_CTX " "), len);
     } else {
@@ -983,6 +1011,8 @@ private:
     } else {                  ///< timeout
       return -1;
     }
+    if (afterTxCallback)
+    	afterTxCallback();
   }
 
   size_t modemGetMaxSize() {
@@ -1115,6 +1145,8 @@ private:
 			  goto finish;
 			} else if ((data.endsWith(AT_RECV)
 					|| data.endsWith(AT_RECVB)) && a == '=') {
+			  if (afterRxCallback)
+			  	  afterRxCallback();
 			  (void)stream.readStringUntil(',').toInt();
 			  length = stream.readStringUntil('\r').toInt();
 			  (void)streamSkipUntil('\n');
@@ -1125,7 +1157,8 @@ private:
 				  length = 0;
 				  continue;
 			  }
-			  if (data.endsWith(AT_RECVB)){ // Binary receive
+			  bool binary = data.endsWith(AT_RECVB);
+			  if (binary){ // Binary receive
 				  char Hi = 0;
 				  for (int i = 0; i < length*2;) {
 					if (stream.available()) {
@@ -1144,6 +1177,12 @@ private:
 						i++;
 					}
 				  }
+
+		      if (messageCallback)
+		      {
+		        messageCallback(length, binary);
+		      }
+
 			  data = "";
 			  length = 0;
 			  continue;

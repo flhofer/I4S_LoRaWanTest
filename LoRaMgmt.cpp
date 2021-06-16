@@ -19,6 +19,13 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
+static uint32_t startMillis;		// Last TX
+static uint32_t timeTx;				// Last TX
+static uint32_t timeRx;				// Last RX
+static uint32_t timeToRx;			// Last Total time
+static unsigned long rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
+static unsigned long rxWindow2 = 2000; // pause duration in ms between tx and rx2 TODO: get parameter
+
 static const sLoRaConfiguration_t * conf;
 
 /********************** HELPERS ************************/
@@ -66,6 +73,61 @@ printMessage(char* rcv, uint8_t len){
 	debugSerial.println();
 }
 
+/*************** CALLBACK FUNCTIONS ********************/
+
+/*
+ * onMessage: Callback function for LoraRx
+ * Arguments: - Byte vector with payload
+ * 			  - vector length
+ * 			  - LoRaWan Port
+ * Return:	  -
+ */
+static void onMessage(size_t size, bool binary){
+	if (!debug)
+		return;
+
+	debugSerial.print(" Size: ");
+	debugSerial.print(size);
+	debugSerial.print(" string: ");
+	//TODO: print string
+}
+
+/*
+ * onBeforeTx: Callback function for before LoRa TX
+ * Arguments: -
+ *
+ * Return:	  -
+ */
+static void onBeforeTx(){
+	startMillis = millis();
+	timeTx = 0;
+	timeRx = 0;
+	timeToRx = 0;
+}
+
+/*
+ * onAfterTx: Callback function for after LoRa TX
+ * Arguments: -
+ *
+ * Return:	  -
+ */
+static void onAfterTx(){
+	timeTx = millis() - startMillis;
+}
+
+/*
+ * onAfterTx: Callback function for after LoRa RX
+ * Arguments: -
+ *
+ * Return:	  -
+ */
+static void onAfterRx(){
+	timeToRx = millis() - startMillis;
+	timeRx = timeToRx - timeTx - rxWindow1;
+	if (timeRx > 1000)
+		timeRx -= rxWindow2;
+}
+
 /*
  * setTxPwr: set power index on modem
  *
@@ -74,8 +136,8 @@ printMessage(char* rcv, uint8_t len){
  * Return:	  - return 0 if OK, -1 if error
  */
 static int
-setTxPwr(uint8_t txPwr){
-	if (conf->mode == 1){
+setTxPwr(uint8_t mode, uint8_t txPwr){
+	if (mode == 1){
 		// Transform the powerIndex to power in dBm
 		int npwr = 0;
 		switch (txPwr) {
@@ -95,7 +157,7 @@ setTxPwr(uint8_t txPwr){
 		LoRa.setTxPower(npwr, PA_OUTPUT_RFO_PIN); // MAX RFO level
 		return 0;
 	}
-	else if (conf->mode > 1)
+	else if (mode > 1)
 		return modem.power((txPwr == 0)? PABOOST : RFO, txPwr) ? 0 : -1;
 	return 0;
 }
@@ -166,23 +228,18 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 	};
 
 	int ret = 0;
-	ret |= !modem.dutyCycle(newConf->chnMsk & CM_DTYCL); // switch off the duty cycle
+	ret |= !modem.dutyCycle(newConf->confMsk & CM_DTYCL); // switch off the duty cycle
 	ret |= !modem.setADR(false);	// disable ADR by default
 
-	debugSerial.print("Your module version is: ");
-	debugSerial.println(modem.version());
-	debugSerial.print("Your device EUI is: ");
-	if (!newConf->devEui){
-		newConf->devEui = strdup(modem.deviceEUI().c_str());
-	}
-	debugSerial.println(newConf->devEui);
+//	if (!newConf->devEui){ // Not set as devAddr
+//		strcpy(newConf->devEui, modem.deviceEUI().c_str());
+//	}
 
 	modem.publicNetwork(!(newConf->confMsk & CM_NPBLK));
 
 	if (newConf->confMsk & CM_RJN)
 		return ret *-1;
 
-	debugSerial.println("-- PERSONALIZE");
 	if (LoRaMgmtJoin()) {
 		// Something went wrong; are you indoor? Move near a window and retry
 		debugSerial.println("Network join failed");
@@ -197,6 +254,11 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 		ret |= !modem.setRX2Freq(869525000);
 		ret |= !modem.setRX2DR(0);
 	}
+
+//	modem.onMessage(&onMessage);
+	modem.onBeforeTx(&onBeforeTx);
+	modem.onAfterTx(&onAfterTx);
+	modem.onAfterRx(&onAfterRx);
 
 	return ret *-1;
 }
@@ -223,8 +285,6 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 	LoRa.setSpreadingFactor(newConf->spreadFactor);
 	LoRa.setSignalBandwidth(newConf->bandWidth*1000);
 	LoRa.setCodingRate4(newConf->codeRate);
-
-	setTxPwr(newConf->txPowerTst);
 
 	return 0;
 }
@@ -329,9 +389,9 @@ LoRaMgmtRemote(){
 int
 LoRaMgmtGetResults(sLoRaResutls_t * const res){
 	int ret = 0;
-//	res->timeTx = timeTx;
-//	res->timeRx = timeRx;
-//	res->timeToRx = timeToRx;
+	res->timeTx = timeTx;
+	res->timeRx = timeRx;
+	res->timeToRx = timeToRx;
 //	res->txFrq = ttn.getFrequency();
 	ret |= getChannels(&res->chnMsk);
 //	res->lastCR = ttn.getCR();
@@ -379,10 +439,7 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 			ret = setupLoRaWan(newConf);
 			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
 	}
-	ret |= setTxPwr(newConf->txPowerTst);
-
-	// set boundaries for len value
-	newConf->dataLen = max(min(newConf->dataLen, MAXLORALEN), 1);
+	ret |= setTxPwr(newConf->mode, newConf->txPowerTst);
 
 	// initialize random seed with dataLen as value
 	// keep consistency among tests, but differs with diff len

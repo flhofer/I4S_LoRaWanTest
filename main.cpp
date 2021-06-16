@@ -119,7 +119,7 @@ printTestResultsDumb(){
 
 	debugSerial.print(prtSttResults);
 	sprintf(buf, "%07lu;%07lu;%lu;",
-			durationTest, txCnt, newConf.frequency);
+			durationTest, txCnt, (long)newConf.frequency * 100000);
 	debugSerial.println(buf);
 }
 
@@ -232,12 +232,12 @@ readSerialD(){
 
 static void
 resetKeyBuffer(){
-	memset(keyArray, '\0', KEYBUFF );
+	memset(keyArray, 0, KEYBUFF );
 
 	// key slots are the same for OTAA and ABP (union)
-	newConf.appEui = &keyArray[0];				// Hex 32
-	newConf.appKey = &keyArray[KEYSIZE+1];		// Hex 32
-	newConf.devEui = &keyArray[KEYSIZE*2+2];	// Hex 8 or 16
+	newConf.appEui = &(keyArray[0]);			// Hex 32
+	newConf.appKey = &(keyArray[KEYSIZE+1]);	// Hex 32
+	newConf.devEui = &(keyArray[KEYSIZE*2+2]);	// Hex 8 or 16
 
 }
 
@@ -604,7 +604,7 @@ void readInput() {
 
 		case 'I': // Print type of micro-controller
 			{
-				char * EUI = LoRaMgmtGetEUI();
+				const char * EUI = LoRaMgmtGetEUI();
 				if (EUI)
 					debugSerial.println(EUI);
 				else
@@ -663,18 +663,18 @@ void readInput() {
 			switch (A){
 
 			case 'c': // set to confirmed
-				newConf.chnMsk &= ~CM_UCNF;
+				newConf.confMsk &= ~CM_UCNF;
 				break;
 			case 'u': // set to unconfirmed
-				newConf.chnMsk |= CM_UCNF;
+				newConf.confMsk |= CM_UCNF;
 				break;
 
 			case 'o': // set to otaa
-				newConf.chnMsk |= CM_OTAA;
+				newConf.confMsk |= CM_OTAA;
 				resetKeyBuffer();
 				break;
 			case 'a': // set to ABP
-				newConf.chnMsk &= ~CM_OTAA;
+				newConf.confMsk &= ~CM_OTAA;
 				resetKeyBuffer();
 				break;
 
