@@ -23,11 +23,11 @@
 #define CM_NPBLK		16		// LORAWAN use not public network
 
 /**
-  * Lora Configuration
+  * LoRa(Wan) Configuration
   */
 typedef struct
 {
-	uint8_t	mode  = 2;			// test mode = 0 off, 1 LoRa, 2 LoRaWan, 3 LoRaWan + Remote, 4 LoRaWan Force Join
+	uint8_t	mode  = 0;			// test mode = 0 off, 1 LoRa, 2 LoRaWan, 3 LoRaWan + Remote, 4 LoRaWan Force Join
 	uint8_t confMsk;			// configuation mask bits
 
 	// Common all Modes
@@ -59,6 +59,11 @@ typedef struct
 		char * appSKey;         // App Session key ABP
 	};
 //	uint32_t NetworkID;          /*< Network ID */
+
+	// function pointers / callback for runtime
+	int *(prep)() = NULL;
+	int *(run)() = NULL;
+	int *(poll)() = NULL;
 
 } sLoRaConfiguration_t;
 
