@@ -540,9 +540,10 @@ runTest(){
 void readInput() {
 
 	signed char A;
+	int intp = 0;
 	while (debugSerial.available()){
 		A = debugSerial.read();
-
+		intp = 0;
 		// work always
 		switch (A){
 
@@ -589,6 +590,21 @@ void readInput() {
 
 			break;
 		case 'R': // set to run
+
+			if (newConf.mode >= 2)
+				if (newConf.frequency == 0){
+					debugSerial.println("Incomplete configuration!");
+					break;
+				}
+
+			if (newConf.mode >= 2)
+				if (!newConf.devAddr ||
+						!newConf.appEui ||
+						!newConf.appKey){
+					debugSerial.println("Incomplete configuration!");
+					break;
+				}
+
 			testReq = qRun;
 			tstate = rInit;
 			break;
@@ -615,9 +631,10 @@ void readInput() {
 		case 'n': // disable debug print
 			debug = 0;
 			break;
-
+		default:
+			intp = 1;
 		}
-		if (newConf.mode == 1)
+		if (intp && newConf.mode == 1)
 			switch (A){
 			case 'f': //TODO: this is limiting to EU868
 				newConf.frequency = (long)readSerialD(); // TODO: 10 vs 100kHz
@@ -657,9 +674,12 @@ void readInput() {
 					newConf.spreadFactor = 12; // set to default
 				}
 				break;
+			default:
+				debugSerial.print("Unknown command ");
+				debugSerial.println(A);
 			}
 
-		if (newConf.mode >= 2)
+		if (intp && newConf.mode >= 2)
 			switch (A){
 
 			case 'c': // set to confirmed
@@ -733,7 +753,9 @@ void readInput() {
 					newConf.dataRate = 5; // set to default
 				}
 				break;
-
+			default:
+				debugSerial.print("Unknown command ");
+				debugSerial.println(A);
 			}
 	}
 
