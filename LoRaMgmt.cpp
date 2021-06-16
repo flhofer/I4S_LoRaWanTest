@@ -23,10 +23,16 @@ static uint32_t startMillis;		// Last TX
 static uint32_t timeTx;				// Last TX
 static uint32_t timeRx;				// Last RX
 static uint32_t timeToRx;			// Last Total time
+static uint32_t sleepMillis;		// Time to remain in sleep
 static unsigned long rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
 static unsigned long rxWindow2 = 2000; // pause duration in ms between tx and rx2 TODO: get parameter
 
 static const sLoRaConfiguration_t * conf;
+static enum {	iIdle,
+				iSend,
+				iSleep,
+			} internalState;
+
 
 /********************** HELPERS ************************/
 
@@ -75,21 +81,24 @@ printMessage(char* rcv, uint8_t len){
 
 /*************** CALLBACK FUNCTIONS ********************/
 
+
 /*
- * onMessage: Callback function for LoraRx
- * Arguments: - Byte vector with payload
- * 			  - vector length
- * 			  - LoRaWan Port
+ * onMessage: Callback function for message received
+ * Arguments: -
+ *
  * Return:	  -
  */
-static void onMessage(size_t size, bool binary){
-	if (!debug)
-		return;
-
-	debugSerial.print(" Size: ");
-	debugSerial.print(size);
-	debugSerial.print(" string: ");
-	//TODO: print string
+static void onMessage(size_t length, bool binary){
+	char rcv[length+1];
+	unsigned int i = 0;
+	while (modem.available() && i < length) {
+		rcv[i++] = (char)modem.read();
+	}
+	rcv[length] = '\0';
+	if (binary)
+		printMessage(rcv, i);
+	else
+		debugSerial.println(rcv);
 }
 
 /*
@@ -231,10 +240,6 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 	ret |= !modem.dutyCycle(newConf->confMsk & CM_DTYCL); // switch off the duty cycle
 	ret |= !modem.setADR(false);	// disable ADR by default
 
-//	if (!newConf->devEui){ // Not set as devAddr
-//		strcpy(newConf->devEui, modem.deviceEUI().c_str());
-//	}
-
 	modem.publicNetwork(!(newConf->confMsk & CM_NPBLK));
 
 	if (newConf->confMsk & CM_RJN)
@@ -270,7 +275,7 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
  *
  * Return:	  - return 0 if OK, -1 if error
  */
-int
+static int
 setupDumb(const sLoRaConfiguration_t * newConf){
 
 	modem.dumb();
@@ -291,29 +296,70 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 
 /*************** TEST SEND FUNCTIONS ********************/
 
-
 /*
- * LoRaMgmtSend: send a message with the defined mode
+ * LoRaMgmtSendDumb: send a message with the defined mode
  *
  * Arguments: -
  *
- * Return:	  status of sending, >0 ok (no of bytes), <0 error
+ * Return:	  status of sending, < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
-LoRaMgmtSend(){
-	if (conf->mode == 1) {
+LoRaMgmtSendDumb(){
+	if (internalState != iSleep){	// Does never wait!
 		while (LoRa.beginPacket() == 0) {
 		  delay(1);
 		}
 		LoRa.write(genbuf, conf->dataLen);
 		return LoRa.endPacket(true); // true = async / non-blocking mode
 	}
-	else
-	{
+	return 0;
+}
+
+/*
+ * LoRaMgmtSend: send a message with the defined mode
+ *
+ * Arguments: -
+ *
+ * Return:	  status of sending, < 0 = error, 0 = busy, 1 = done, 2 = stop
+ */
+int
+LoRaMgmtSend(){
+//	if ((ret = LoRaMgmtSend()) && ret < 0){
+//		if (LORABUSY == ret) // no chn -> pause for free-delay / active channels
+//			delay(RESFREEDEL/actChan);
+//		else
+//			delay(100); // simple retry timer 100ms, e.g. busy
+//		break;
+//	}
+//
+//	// sent but no response from confirmed, or not confirmed msg, goto poll
+//	if (ret == 1 || !(newConf.confMsk & CM_UCNF)){
+//		tstate = rRun;
+//		debugSerial.print(prtSttPoll);
+//	}
+//	else {
+//		tstate = rStop;
+//		debugSerial.print(prtSttStop);
+//		break;
+//	}
+	if (internalState == iIdle){
+		internalState = iSend;
+		sleepMillis = 100;// simple retry timer 100ms, e.g. busy
+
 		modem.beginPacket();
 		modem.write(genbuf, conf->dataLen);
-		return modem.endPacket(conf);
+		int ret = modem.endPacket(conf);
+		if (ret < 0){
+			if (LORABUSY == ret ) // no chn -> pause for free-delay / active channels
+				sleepMillis = RESFREEDEL/actChan;
+			return 0;
+		}
+		// sent but no response from confirmed, or not confirmed msg, continue to next step
+		if (ret == 1 || !(conf->confMsk & CM_UCNF))
+			return 1;
+		return 2;
 	}
+	return 0;	// else busy
 }
 
 /*
@@ -321,23 +367,48 @@ LoRaMgmtSend(){
  *
  * Arguments: -
  *
- * Return:	  status of polling, 0 no message, -1 error, >0 No of bytes
+ * Return:	  status of polling, < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
 LoRaMgmtPoll(){
-	delay(1000);
-	if (!modem.available()) {
-		// No downlink message received at this time.
-		return 0;
-	}
-	char rcv[MAXLORALEN];
-	unsigned int i = 0;
-	while (modem.available() && i < MAXLORALEN) {
-		rcv[i++] = (char)modem.read();
-	}
-	printMessage(rcv, i);
 
-	return i;
+//	if ((ret = LoRaMgmtPoll()) && (!(newConf.confMsk & CM_UCNF) || (pollcnt < UNCF_POLL))){
+//		if (-9 == ret) // no chn -> pause for free-delay / active channels
+//			delay(RESFREEDEL/actChan);
+//		else if (1 == ret)
+//			pollcnt++;
+//		else
+//			delay(100); // simple retry timer 100ms, e.g. busy
+//		break;
+//	}
+//
+//	// Unconf polling ended and still no response, or confirmed and error message (end of retries)
+//	if ((failed = (0 != ret)))
+//		debugSerial.print( prtSttPollErr);
+//
+//	tstate = rStop;
+//	debugSerial.print(prtSttStop);
+
+	if (internalState == iIdle){
+		internalState = iSend;
+		sleepMillis = 100;	// simple retry timer 100ms, e.g. busy
+
+//		 && (!(newConf.confMsk & CM_UCNF) || (pollcnt < UNCF_POLL))
+
+		int ret = modem.poll();
+		if (ret <= 0){
+			if (LORABUSY == ret ) // no chn -> pause for free-delay / active channels
+				sleepMillis = RESFREEDEL/actChan;
+			return 0;
+		}
+		else if (0 < ret)
+			//			pollcnt++;
+			return modem.getMsgConfirmed();
+
+		return ret;
+	}
+
+	return 0;
 }
 
 /*
@@ -492,4 +563,31 @@ LoRaMgmtGetEUI(){
 		return modem.deviceEUI().c_str();
 	}
 	return conf->devEui;
+}
+
+/*
+ * LoRaMgmtMain: state machine for the LoRa Control
+ *
+ * Arguments: -
+ *
+ * Return:	  -
+ */
+void
+LoRaMgmtMain (){
+	switch (internalState){
+
+	case iIdle:
+		break;
+	case iSend:
+		startMillis = millis();
+		internalState = iSleep;
+		break;
+	case iPoll:
+		startMillis = millis();
+		internalState = iSleep;
+		break;
+	case iSleep:
+		if (millis() - startMillis > sleepMillis)
+			internalState = iIdle;
+	}
 }
