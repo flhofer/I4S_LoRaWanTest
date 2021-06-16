@@ -77,7 +77,7 @@ typedef struct {
 	uint8_t rxSnr;			// last rx SNR, default -128
 } sLoRaResutls_t;
 
-int LoRaMgmtSetup(sLoRaConfiguration_t * conf);
+int LoRaMgmtSetup(const sLoRaConfiguration_t * conf);
 int LoRaMgmtJoin();
 
 int LoRaMgmtSend();
@@ -86,7 +86,7 @@ int LoRaMgmtUpdt();
 int LoRaMgmtRcnf();
 int LoRaMgmtRemote();
 
-int LoRaMgmtGetResults(sLoRaResutls_t * res);
-char* LoRaMgmtGetEUI();
+int LoRaMgmtGetResults(sLoRaResutls_t * const res);
+const char* LoRaMgmtGetEUI();
 
 #endif /* LORAMGMT_H_ */

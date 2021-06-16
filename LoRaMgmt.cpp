@@ -19,7 +19,7 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
-static sLoRaConfiguration_t * conf;
+static const sLoRaConfiguration_t * conf;
 
 /********************** HELPERS ************************/
 
@@ -158,7 +158,7 @@ setChannels(uint16_t chnMsk, uint8_t dataRate) {
  * Return:	  returns 0 if successful, else -1
  */
 static int
-setupLoRaWan(sLoRaConfiguration_t * newConf){
+setupLoRaWan(const sLoRaConfiguration_t * newConf){
 
 	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
@@ -209,7 +209,7 @@ setupLoRaWan(sLoRaConfiguration_t * newConf){
  * Return:	  - return 0 if OK, -1 if error
  */
 int
-setupDumb(sLoRaConfiguration_t * newConf){
+setupDumb(const sLoRaConfiguration_t * newConf){
 
 	modem.dumb();
 
@@ -327,7 +327,7 @@ LoRaMgmtRemote(){
  * Return:	  - 0 if OK, <0 error
  */
 int
-LoRaMgmtGetResults(sLoRaResutls_t * res){
+LoRaMgmtGetResults(sLoRaResutls_t * const res){
 	int ret = 0;
 //	res->timeTx = timeTx;
 //	res->timeRx = timeRx;
@@ -365,7 +365,7 @@ LoRaMgmtJoin(){
  * Return:	  returns 0 if successful, else -1
  */
 int
-LoRaMgmtSetup(sLoRaConfiguration_t * newConf){
+LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 	int ret = 0;
 	switch (newConf->mode){
 	case 0: ;
@@ -425,9 +425,14 @@ LoRaMgmtRcnf(){
 }
 
 
-char* LoRaMgmtGetEUI(){ // TODO: This does not work
+const char*
+LoRaMgmtGetEUI(){
 	if (!conf || !conf->devEui){
-		setupLoRaWan(conf);
+		if (!modem.begin(freqPlan)) {
+			debugSerial.println("Failed to start module");
+			return NULL;
+		};
+		return modem.deviceEUI().c_str();
 	}
 	return conf->devEui;
 }
