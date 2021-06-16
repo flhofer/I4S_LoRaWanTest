@@ -246,32 +246,25 @@ resetKeyBuffer(){
 static unsigned long startTs = 0; // loop timer
 
 // Enumeration for test status
-typedef enum { 	rError = -1,
+static enum { 	rError = -1,
 				rInit = 0,
-				rOff,
-				rDumb,
-
-				rJoin =5, //	 Join-Bomb
-				rWaitLoRa,
+				rPrepare,
 				rStart,
 				rRun,
 				rStop,
-
 
 				rEvaluate = 15,
 				rReset,
 				rPrint,
 
 				rEnd = 20
-			} testRun_t;
+			} tstate = rInit;	// test run status
 
-typedef enum {	qIdle = 0,
+static enum {	qIdle = 0,
 				qRun,
 				qStop
-			} testReq_t;
+			} testReq = qIdle;	// test request status
 
-static testRun_t tstate = rInit;// test run status
-static testReq_t testReq= qIdle;// test request status
 static int	pollcnt;			// un-conf poll retries
 static int	retries; 			// un-conf send retries
 
@@ -280,97 +273,54 @@ static int	retries; 			// un-conf send retries
  *
  * Arguments: -
  *
- * Return:	  - test run enumeration status
+ * Return:	-
  */
-static testRun_t
+static void
 runTest(){
 
+	// reset at every call
 	int failed = 0;
 	int ret = 0;
+
+	LoRaMgmtMain();
 
 	switch(tstate){
 
 	case rInit:
+		// reset at every test
 		txCnt = 0;
+		pollcnt = 0;
+		retries = 0;
 
 		// reset status on next test
 		memset(testResults,0, sizeof(testResults));
 		trn = &testResults[0];	// Init results pointer
 
-		{	// enter new locality
-
-			// Allocate on stack a new configuration
-
-			switch (newConf.mode)
-			{
-			default:
-			case 0 : // off- mute
-				tstate = rOff;
-				break;
-			case 1 : // dumb LoRa
-				tstate = rDumb;
-				break;
-			case 2 :  // LoRaWan
-				tstate = rStart;
-				break;
-			case 3 : // LoRaRemote
-				tstate = rWaitLoRa;
-				break;
-			case 4 : // LoRaWan force Join
-				tstate = rJoin;
-				break;
-			}
-
-			if (LoRaMgmtSetup(&newConf))
-			{
-				tstate = rError;
-				debugSerial.print(prtSttErrExec);
-				break;
-			}
+		if (LoRaMgmtSetup(&newConf))
+		{
+			tstate = rError;
+			debugSerial.print(prtSttErrExec);
+			break;
 		}
+		tstate = rPrepare;
 		debugSerial.print(prtSttStart);
 		startTs = millis();
-		break;
-
-	/*
-	 * Dumb Modem States
-	 */
-
-	case rDumb:
-		(void)LoRaMgmtSend(); // TODO: this is now a single call
-		txCnt++;
 		// fall-through
 		// @suppress("No break at end of case")
 
-	case rOff:
+	case rPrepare:
 		if (testReq >= qStop ){
-			tstate = rPrint;
+			tstate = rStop;
 			durationTest = millis() - startTs;
 		}
-		break;
 
-	/*
-	 * LoRaWan execution states
-	 */
+		if (newConf.prep &&
+			(ret = newConf.prep()) == 0)
+				break;
+		else if (ret < 0)
+			tstate = rError;
 
-	case rJoin:
-		LoRaMgmtJoin();
-		txCnt++;
-		if (testReq >= qStop ){
-			tstate = rPrint;
-			durationTest = millis() - startTs;
-		}
-		break;
-
-	case rWaitLoRa:
-		// delay in mgmt - 1000ms
-		{
-			int cmd = 0;
-			if ((cmd = LoRaMgmtRemote()) == 1)
-				tstate = rStart;
-			else if (cmd != 0)
-				tstate = rError;
-		}
+		tstate = rStart;
 		// fall-through
 		// @suppress("No break at end of case")
 
@@ -381,24 +331,22 @@ runTest(){
 			durationTest = millis() - startTs;
 		}
 
-		if ((ret = LoRaMgmtSend()) && ret < 0){
-			if (LORABUSY == ret) // no chn -> pause for free-delay / active channels
-				delay(RESFREEDEL/actChan);
-			else
-				delay(100); // simple retry timer 100ms, e.g. busy
-			break;
-		}
 
-		// sent but no response from confirmed, or not confirmed msg, goto poll
-		if (ret == 1 || !(newConf.confMsk & CM_UCNF)){
-			tstate = rRun;
-			debugSerial.print(prtSttPoll);
+		if (newConf.start){
+			txCnt++;
+			if ((ret = newConf.start()) < 0){
+				tstate = rError;
+				break;
+			}
+			else if (ret == 1) {
+				tstate = rStop;
+				debugSerial.print(prtSttStop);
+				break;
+			}
 		}
-		else {
-			tstate = rStop;
-			debugSerial.print(prtSttStop);
-			break;
-		}
+		debugSerial.print(prtSttPoll);
+		tstate = rRun;
+		pollcnt = 0;
 		// fall-through
 		// @suppress("No break at end of case")
 
@@ -409,22 +357,22 @@ runTest(){
 			durationTest = millis() - startTs;
 		}
 
-		if ((ret = LoRaMgmtPoll()) && (!(newConf.confMsk & CM_UCNF) || (pollcnt < UNCF_POLL))){
-			if (-9 == ret) // no chn -> pause for free-delay / active channels
-				delay(RESFREEDEL/actChan);
-			else if (1 == ret)
-				pollcnt++;
-			else
-				delay(100); // simple retry timer 100ms, e.g. busy
+		if (!newConf.run)
+			break;
+
+		txCnt++;
+
+		if ((ret = newConf.run()) < 0){
+			failed = 1;
+			debugSerial.print(prtSttPollErr);
+		}
+		else if (ret == 0) {
+			pollcnt++;
 			break;
 		}
-
-		// Unconf polling ended and still no response, or confirmed and error message (end of retries)
-		if ((failed = (0 != ret)))
-			debugSerial.print( prtSttPollErr);
-
 		tstate = rStop;
 		debugSerial.print(prtSttStop);
+		retries++;
 		// fall-through
 		// @suppress("No break at end of case")
 
@@ -528,7 +476,6 @@ runTest(){
 		}
 	}
 
-	return tstate;
 }
 /*
  * readInput(): read input string
@@ -554,13 +501,40 @@ void readInput() {
 				newConf.mode = 0; // set to default
 			}
 			resetKeyBuffer();
-			// Defaults for LoRa mode
-			if (newConf.mode == 1){
+			switch (newConf.mode)
+			{
+			default:
+			case 0 : // off- mute
+				newConf.prep = NULL;
+				newConf.start = NULL;
+				newConf.run = NULL;
+				break;
+			case 1 : // dumb LoRa
+				newConf.prep = NULL;
+				newConf.start = &LoRaMgmtSend;
+				newConf.run = NULL;
 				newConf.frequency = 8683;
 				newConf.bandWidth = 250;
 				newConf.codeRate = 8;
 				newConf.spreadFactor = 12;
+				break;
+			case 2 :  // LoRaWan
+				newConf.prep = NULL;
+				newConf.start = &LoRaMgmtSend;
+				newConf.run = &LoRaMgmtPoll;
+				break;
+			case 3 : // LoRaRemote
+				newConf.prep = &LoRaMgmtRemote;
+				newConf.start = &LoRaMgmtSend;
+				newConf.run = &LoRaMgmtPoll;
+				break;
+			case 4 : // LoRaWan force Join
+				newConf.prep = NULL;
+				newConf.start = NULL;
+				newConf.run = &LoRaMgmtJoin;
+				break;
 			}
+
 			break;
 
 		case 'p': // read Tx power index
