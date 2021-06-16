@@ -2,9 +2,7 @@
 #include "main.h"
 #include "LoRaMgmt.h"			// LoRaWan modem management
 
-#define UNCF_POLL	5			// How many times to poll
 #define TST_MXRSLT	30			// What's the max number of test results we allow?
-#define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
 #define LEDBUILDIN	PORT_PA20	// MKRWan1300 build in led position
 #define KEYBUFF		73			// Max total usage of key buffers = 32 + 32 + 16 + 3*\0
 #define KEYSIZE		32			// 32
@@ -44,7 +42,6 @@ const char prtTblTms[] PROGMEM = " ms";
 // Working variables
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
 static sLoRaResutls_t * trn;					// Pointer to actual entry
-static uint8_t actChan = 16;					// active channels
 static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
 
@@ -238,7 +235,6 @@ resetKeyBuffer(){
 	newConf.appEui = &(keyArray[0]);			// Hex 32
 	newConf.appKey = &(keyArray[KEYSIZE+1]);	// Hex 32
 	newConf.devEui = &(keyArray[KEYSIZE*2+2]);	// Hex 8 or 16
-
 }
 
 /*************** TEST MANAGEMENT FUNCTIONS*****************/
@@ -265,7 +261,6 @@ static enum {	qIdle = 0,
 				qStop
 			} testReq = qIdle;	// test request status
 
-static int	pollcnt;			// un-conf poll retries
 static int	retries; 			// un-conf send retries
 
 /*
@@ -289,7 +284,6 @@ runTest(){
 	case rInit:
 		// reset at every test
 		txCnt = 0;
-		pollcnt = 0;
 		retries = 0;
 
 		// reset status on next test
@@ -346,7 +340,6 @@ runTest(){
 		}
 		debugSerial.print(prtSttPoll);
 		tstate = rRun;
-		pollcnt = 0;
 		// fall-through
 		// @suppress("No break at end of case")
 
@@ -366,10 +359,13 @@ runTest(){
 			failed = 1;
 			debugSerial.print(prtSttPollErr);
 		}
-		else if (ret == 0) {
-			pollcnt++;
+		else if (ret == 0)
+			break;
+		else if (ret == 2){
+			tstate = rPrint;
 			break;
 		}
+
 		tstate = rStop;
 		debugSerial.print(prtSttStop);
 		retries++;
@@ -382,7 +378,6 @@ runTest(){
 		if (failed && (newConf.repeatSend > retries) && testReq < qStop){
 			tstate = rStart;
 			debugSerial.print(prtSttRetry);
-			delay(RESFREEDEL/actChan); // delay for modem resource free
 			(void)LoRaMgmtUpdt();
 			break;
 		}

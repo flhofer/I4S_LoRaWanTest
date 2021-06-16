@@ -1358,10 +1358,10 @@ environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARD_NAM
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.BOARD_NAME/value=Arduino MKR WAN 1300
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.COM_PORT/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.COM_PORT/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.COM_PORT/value=/dev/cu.usbmodem1431201
+environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.COM_PORT/value=/dev/cu.usbmodem141301
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/operation=replace
-environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/value=${eclipse_home}/
+environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.ECLIPSE_LOCATION/value=${eclipse_home}/////////////////////////////////////////
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.EXTRA.ALL/delimiter=\:
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.EXTRA.ALL/operation=replace
 environment/project/io.sloeber.core.toolChain.release.724714924/JANTJE.EXTRA.ALL/value=
