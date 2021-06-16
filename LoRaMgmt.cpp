@@ -96,7 +96,7 @@ setTxPwr(uint8_t txPwr){
 		return 0;
 	}
 	else if (conf->mode > 1)
-		return modem.power((txPwr == 20)? PABOOST : RFO, txPwr) ? 0 : -1;
+		return modem.power((txPwr == 0)? PABOOST : RFO, txPwr) ? 0 : -1;
 	return 0;
 }
 
@@ -158,7 +158,7 @@ setChannels(uint16_t chnMsk, uint8_t dataRate) {
  * Return:	  returns 0 if successful, else -1
  */
 static int
-setupLoRaWan(){
+setupLoRaWan(sLoRaConfiguration_t * newConf){
 
 	if (!modem.begin(freqPlan)) {
 		debugSerial.println("Failed to start module");
@@ -166,20 +166,20 @@ setupLoRaWan(){
 	};
 
 	int ret = 0;
-	ret |= !modem.dutyCycle(false); // switch off the duty cycle
-	ret |= !modem.setADR(false);	// disable ADR
+	ret |= !modem.dutyCycle(newConf->chnMsk & CM_DTYCL); // switch off the duty cycle
+	ret |= !modem.setADR(false);	// disable ADR by default
 
 	debugSerial.print("Your module version is: ");
 	debugSerial.println(modem.version());
 	debugSerial.print("Your device EUI is: ");
-	if (!conf->devEui){
-		conf->devEui = strdup(modem.deviceEUI().c_str());
+	if (!newConf->devEui){
+		newConf->devEui = strdup(modem.deviceEUI().c_str());
 	}
-	debugSerial.println(conf->devEui);
+	debugSerial.println(newConf->devEui);
 
-	modem.publicNetwork(!(conf->confMsk & CM_NPBLK));
+	modem.publicNetwork(!(newConf->confMsk & CM_NPBLK));
 
-	if (conf->confMsk & CM_RJN)
+	if (newConf->confMsk & CM_RJN)
 		return ret *-1;
 
 	debugSerial.println("-- PERSONALIZE");
@@ -192,7 +192,7 @@ setupLoRaWan(){
 	// Set poll interval to 60 secs.
 	modem.minPollInterval(60);
 
-	if (!(conf->confMsk & CM_OTAA)){
+	if (!(newConf->confMsk & CM_OTAA)){
 		// set to LorIoT standard RX, DR
 		ret |= !modem.setRX2Freq(869525000);
 		ret |= !modem.setRX2DR(0);
@@ -209,22 +209,22 @@ setupLoRaWan(){
  * Return:	  - return 0 if OK, -1 if error
  */
 int
-setupDumb(){
+setupDumb(sLoRaConfiguration_t * newConf){
 
 	modem.dumb();
 
 	// Configure LoRa module to transmit and receive at 915MHz (915*10^6)
 	// Replace 915E6 with the frequency you need (eg. 433E6 for 433MHz)
-	if (!LoRa.begin((long)conf->frequency * 10000)) {
+	if (!LoRa.begin((long)newConf->frequency * 100000)) {
 		debugSerial.println("Starting LoRa failed!");
 		return -1;
 	}
 
-	LoRa.setSpreadingFactor(conf->spreadFactor);
-	LoRa.setSignalBandwidth(conf->bandWidth*1000);
-	LoRa.setCodingRate4(conf->codeRate);
+	LoRa.setSpreadingFactor(newConf->spreadFactor);
+	LoRa.setSignalBandwidth(newConf->bandWidth*1000);
+	LoRa.setCodingRate4(newConf->codeRate);
 
-	setTxPwr(conf->txPowerTst);
+	setTxPwr(newConf->txPowerTst);
 
 	return 0;
 }
@@ -365,32 +365,34 @@ LoRaMgmtJoin(){
  * Return:	  returns 0 if successful, else -1
  */
 int
-LoRaMgmtSetup(sLoRaConfiguration_t * conf){
+LoRaMgmtSetup(sLoRaConfiguration_t * newConf){
 	int ret = 0;
-	switch (conf->mode){
+	switch (newConf->mode){
 	case 0: ;
 			break;
-	case 1: ret = setupDumb();
+	case 1: ret = setupDumb(newConf);
 			break;
 	default:
 	case 2:
 	case 3:
 	case 4:
-			ret = setupLoRaWan();
-			setChannels(conf->chnMsk, conf->dataRate);
+			ret = setupLoRaWan(newConf);
+			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
 	}
-	setTxPwr(conf->txPowerTst);
+	ret |= setTxPwr(newConf->txPowerTst);
 
 	// set boundaries for len value
-	conf->dataLen = max(min(conf->dataLen, MAXLORALEN), 1);
+	newConf->dataLen = max(min(newConf->dataLen, MAXLORALEN), 1);
 
 	// initialize random seed with dataLen as value
 	// keep consistency among tests, but differs with diff len
-	rnd_contex = conf->dataLen;
+	rnd_contex = newConf->dataLen;
 	// Prepare PayLoad of x bytes
 	(void)generatePayload(genbuf);
 
-	return 0;
+	if (ret == 0)
+		conf = newConf;
+	return ret;
 }
 
 /*
@@ -423,9 +425,9 @@ LoRaMgmtRcnf(){
 }
 
 
-char* LoRaMgmtGetEUI(){
-	if (!conf->devEui){
-		setupLoRaWan();
+char* LoRaMgmtGetEUI(){ // TODO: This does not work
+	if (!conf || !conf->devEui){
+		setupLoRaWan(conf);
 	}
 	return conf->devEui;
 }

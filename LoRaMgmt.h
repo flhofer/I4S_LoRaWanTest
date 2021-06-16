@@ -35,7 +35,7 @@ typedef struct
 	uint8_t dataLen = 1;		// data length to send over LoRa for a test
 	uint8_t repeatSend = 5;		// number of send repeats
 	union { // 16Bit
-		uint16_t frequency;		// LoRa / FSK frequency in 10KHz steps
+		uint16_t frequency;		// LoRa / FSK frequency in 100KHz steps
 		uint16_t chnMsk;		// ChannelMask for LoRaWan EU868 (1-16)
 	};
 	union { // 8Bit
