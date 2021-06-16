@@ -60,10 +60,10 @@ typedef struct
 	};
 //	uint32_t NetworkID;          /*< Network ID */
 
-	// function pointers / callback for runtime
-	int *(prep)() = NULL;
-	int *(run)() = NULL;
-	int *(poll)() = NULL;
+	// function pointers / callback for runtime. < 0 = error, 0 = busy, 1 = done, 2 = stop
+	int (*prep)() = NULL;
+	int (*start)() = NULL;
+	int (*run)() = NULL;
 
 } sLoRaConfiguration_t;
 
@@ -82,10 +82,13 @@ typedef struct {
 	uint8_t rxSnr;			// last rx SNR, default -128
 } sLoRaResutls_t;
 
+void LoRaMgmtMain();
+
 int LoRaMgmtSetup(const sLoRaConfiguration_t * conf);
 int LoRaMgmtJoin();
 
 int LoRaMgmtSend();
+int LoRaMgmtDumb();
 int LoRaMgmtPoll();
 int LoRaMgmtUpdt();
 int LoRaMgmtRcnf();
