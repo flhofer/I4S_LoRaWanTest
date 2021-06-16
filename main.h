@@ -14,12 +14,6 @@
 #define loraSerial SerialLoRa		// Hardware serial
 
 #define LORA_DEBUG 		debugSerial
-#define LORA_DEVADDR	"01234567"
-#define LORA_NWSKEY		"01234567890abcdef01234567890abcd"
-#define LORA_APSKEY		"01234567890abcdef01234567890abcd"
-#define LORA_APPEUI		"01234567890abcde"
-#define LORA_APPKEY 	"01234567890abcdef01234567890abcd"
-
 #define MICROVER		"MKRWAN_1.0V"
 
 //global variable declarations

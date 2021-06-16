@@ -34,27 +34,27 @@ typedef struct
 	uint8_t txPowerTst = 0;		// txPower setting for the low power test
 	uint8_t dataLen = 1;		// data length to send over LoRa for a test
 	uint8_t repeatSend = 5;		// number of send repeats
-	union {
+	union { // 16Bit
 		uint16_t frequency;		// LoRa / FSK frequency in 10KHz steps
 		uint16_t chnMsk;		// ChannelMask for LoRaWan EU868 (1-16)
 	};
-	union {
+	union { // 8Bit
 		uint8_t dataRate = 255;	// data rate starting value for LoRaWan, 255 = leave unchanged
 		uint8_t spreadFactor;	// spread factor for Chirp signals FSK/LORA
 	};
 
 	// LoRaWan (OTAA vs ABP) or LoRa/FSK settings
-	union {
+	union { // 32Bit
 		uint8_t bandWidth;		// Bandwidth setting for LoRa & FSK TODO: create steps
 		char * devEui = NULL;   // Device EUI OTAA
 		char * devAddr;         // Device Address ABP
 	};
-	union {
+	union { // 32Bit
 		uint8_t	codeRate;		// Code rate for LoRa & FSK, in 4/
 		char * appEui = NULL;   // App EUI OTAA
 		char * nwkSKey;         // Nw Session key ABP
 	};
-	union {
+	union { // 32Bit
 		char * appKey = NULL;   // App KEY OTAA
 		char * appSKey;         // App Session key ABP
 	};

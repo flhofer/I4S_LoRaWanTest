@@ -6,7 +6,8 @@
 #define TST_MXRSLT	30			// What's the max number of test results we allow?
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
 #define LEDBUILDIN	PORT_PA20	// MKRWan1300 build in led position
-
+#define KEYBUFF		73			// Max total usage of key buffers = 32 + 32 + 16 + 3*\0
+#define KEYSIZE		32			// 32
 /* Strings 		*/
 
 const char prtSttStart[] PROGMEM = "Start test\n";
@@ -48,8 +49,7 @@ static long txCnt;								// transmission counter
 static long durationTest;						// test duration in ms
 
 static sLoRaConfiguration_t newConf;			// test Configuration
-static char keyArray[43];						// static array containing init keys
-static char * keyArrayP;						// pointer to key array
+static char keyArray[KEYBUFF];					// static array containing init keys
 
 /* 	Globals		*/
 
@@ -119,7 +119,7 @@ printTestResultsDumb(){
 
 	debugSerial.print(prtSttResults);
 	sprintf(buf, "%07lu;%07lu;%lu;",
-			durationTest, txCnt, Frequency);
+			durationTest, txCnt, newConf.frequency);
 	debugSerial.println(buf);
 }
 
@@ -128,9 +128,9 @@ printTestResultsDumb(){
  *
  * Arguments:	- pointer to char* to put string
  *
- * Return:		- Hex string
+ * Return:		-
  */
-static char *
+static void
 readSerialS(char * retVal, int len){
 	char nChar;
 	int pos = 0;
@@ -157,11 +157,11 @@ readSerialS(char * retVal, int len){
 				// @suppress("No break at end of case")
 			default:	// Not a number or HEX char/terminator
 				retVal[pos] = '\0';
-				return (void*)retVal+pos+1;
+				return;
 		}
 	}
 	retVal[pos-1] = '\0';
-	return (void*)retVal+pos;
+	return;
 }
 
 /*
@@ -228,6 +228,17 @@ readSerialD(){
 		retVal = retVal*10 + (int16_t)(A - 48);
 	}
 	return retVal;
+}
+
+static void
+resetKeyBuffer(){
+	memset(keyArray, '\0', KEYBUFF );
+
+	// key slots are the same for OTAA and ABP (union)
+	newConf.appEui = &keyArray[0];				// Hex 32
+	newConf.appKey = &keyArray[KEYSIZE+1];		// Hex 32
+	newConf.devEui = &keyArray[KEYSIZE*2+2];	// Hex 8 or 16
+
 }
 
 /*************** TEST MANAGEMENT FUNCTIONS*****************/
@@ -297,7 +308,6 @@ runTest(){
 				tstate = rOff;
 				break;
 			case 1 : // dumb LoRa
-
 				tstate = rDumb;
 				break;
 			case 2 :  // LoRaWan
@@ -380,7 +390,7 @@ runTest(){
 		}
 
 		// sent but no response from confirmed, or not confirmed msg, goto poll
-		if (ret == 1 || !confirmed){
+		if (ret == 1 || !(newConf.confMsk & CM_UCNF)){
 			tstate = rRun;
 			debugSerial.print(prtSttPoll);
 		}
@@ -399,7 +409,7 @@ runTest(){
 			durationTest = millis() - startTs;
 		}
 
-		if ((ret = LoRaMgmtPoll()) && (confirmed || (pollcnt < UNCF_POLL))){
+		if ((ret = LoRaMgmtPoll()) && (!(newConf.confMsk & CM_UCNF) || (pollcnt < UNCF_POLL))){
 			if (-9 == ret) // no chn -> pause for free-delay / active channels
 				delay(RESFREEDEL/actChan);
 			else if (1 == ret)
@@ -421,7 +431,7 @@ runTest(){
 	case rStop:
 
 		// unsuccessful and retries left?
-		if (failed && (repeatSend > retries) && testReq < qStop){
+		if (failed && (newConf.repeatSend > retries) && testReq < qStop){
 			tstate = rStart;
 			debugSerial.print(prtSttRetry);
 			delay(RESFREEDEL/actChan); // delay for modem resource free
@@ -490,7 +500,7 @@ runTest(){
 	 * Common states ending
 	 */
 	case rPrint:
-		switch (mode){
+		switch (newConf.mode){
 		case 0:
 			break;
 
@@ -532,6 +542,8 @@ void readInput() {
 	signed char A;
 	while (debugSerial.available()){
 		A = debugSerial.read();
+
+		// work always
 		switch (A){
 
 		case 'm': // read test mode
@@ -540,118 +552,42 @@ void readInput() {
 				debugSerial.println("Invalid mode [0-4]");
 				newConf.mode = 0; // set to default
 			}
-			keyArray[0]='\0';
-			keyArrayP = keyArray;
-			newConf.devEui = NULL;
-			break;
-
-		case 'f': //TODO: this is limiting to EU868
-			newConf.frequency = (long)readSerialD(); // TODO: 10 vs 100kHz
-			if (newConf.frequency < 8630 || newConf.frequency > 8700 ){
-				debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
-				newConf.frequency = 868300000; // set to default
-			}
-			break;
-
-		case 'c': // set to confirmed
-			newConf.chnMsk &= ~CM_UCNF;
-			break;
-		case 'u': // set to unconfirmed
-			newConf.chnMsk |= CM_UCNF;
-			break;
-
-		case 'o': // set to otaa
-			newConf.chnMsk |= CM_OTAA;
-			break;
-		case 'a': // set to abp
-			newConf.chnMsk &= ~CM_OTAA;
-			break;
-
-		case 'N': // Network session key for ABP
-			newConf.nwkSKey = keyArrayP;
-			keyArrayP = readSerialS(newConf.nwkSKey, 32);
-			if (strlen(newConf.nwkSKey) < 32){
-				debugSerial.println("Invalid network session key");
-				strcpy(newConf.nwkSKey, LORA_NWSKEY);
-			}
-			break;
-
-		case 'A': // Application session key for ABP
-			newConf.appSKey = keyArrayP;
-			keyArrayP = readSerialS(newConf.appSKey, 32);
-			if (strlen(newConf.appSKey) < 32){
-				debugSerial.println("Invalid application session key");
-				strcpy(newConf.appSKey, LORA_APSKEY);
-
-			}
-			break;
-
-		case 'D': // Device address for ABP
-			readSerialS(devAddr, 8);
-			if (strlen(devAddr) < 8){
-				debugSerial.println("Invalid device address key");
-				strcpy(devAddr, LORA_DEVADDR);
-			}
-			break;
-
-		case 'K': // Application Key for OTAA
-			readSerialS(appKey, 32);
-			if (strlen(appKey) < 32){
-				debugSerial.println("Invalid application key");
-				strcpy(appKey, LORA_APPKEY);
-			}
-			break;
-
-		case 'E': // EUI address for OTAA
-			readSerialS(appEui, 16);
-			if (strlen(appEui) < 16){
-				debugSerial.println("Invalid EUI address");
-				strcpy(appEui, LORA_APPEUI);
-			}
-			break;
-
-		case 'C':
-			chnEnabled = readSerialH();
-			if (chnEnabled < 0x01 || chnEnabled > 0xFF ){ //TODO: this is limiting to EU868
-				debugSerial.println("Invalid channel mask [0x07-0xFFh]");
-				chnEnabled = 0xFF; // set to default
+			resetKeyBuffer();
+			// Defaults for LoRa mode
+			if (newConf.mode == 1){
+				newConf.frequency = 8683;
+				newConf.bandWidth = 250;
+				newConf.codeRate = 8;
+				newConf.spreadFactor = 12;
 			}
 			break;
 
 		case 'p': // read Tx power index
-			txPowerTst = (uint8_t)readSerialD();
-			if (txPowerTst > 5 ){ //TODO: this is limiting to EU868
+			newConf.txPowerTst = (uint8_t)readSerialD();
+			if (newConf.txPowerTst > 5 ){ //TODO: this is limiting to EU868
 				debugSerial.println("Invalid power level [0-5]");
-				txPowerTst = 0; // set to default
+				newConf.txPowerTst = 0; // set to default
 			}
 			break;
 
 		case 'l': // read data length
-			dataLen = (uint8_t)readSerialD();
-			if (dataLen > 250 || dataLen == 0 ){
+			newConf.dataLen = (uint8_t)readSerialD();
+			if (newConf.dataLen > 250 || newConf.dataLen == 0 ){
 				debugSerial.println("Invalid data length [1-250]");
-				dataLen = 1; // set to default
-			}
-			break;
-
-		case 'd': // read data length
-			dataRate = (uint8_t)readSerialD();
-			if (dataRate > 5){ // we exclude 6 and 7 for now
-				debugSerial.println("Invalid data rate [0-5]");
-				dataRate = 5; // set to default
+				newConf.dataLen = 1; // set to default
 			}
 			break;
 
 		case 'r': // read repeat count for LoRaWan packets
-			repeatSend = (uint8_t)readSerialD();
-			if (repeatSend == 0 || repeatSend > TST_MXRSLT){
+			newConf.repeatSend = (uint8_t)readSerialD();
+			if (newConf.repeatSend == 0 || newConf.repeatSend > TST_MXRSLT){
 				debugSerial.print("Invalid repeat count [1-");
 				debugSerial.print(TST_MXRSLT);
 				debugSerial.println("]");
-				repeatSend = 5; // set to default
+				newConf.repeatSend = 5; // set to default
 			}
-			break;
 
+			break;
 		case 'R': // set to run
 			testReq = qRun;
 			tstate = rInit;
@@ -673,7 +609,126 @@ void readInput() {
 		case 'n': // disable debug print
 			debug = 0;
 			break;
+
 		}
+		if (newConf.mode == 1)
+			switch (A){
+			case 'f': //TODO: this is limiting to EU868
+				newConf.frequency = (long)readSerialD(); // TODO: 10 vs 100kHz
+				if (newConf.frequency < 8630 || newConf.frequency > 8700 ){
+					debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
+					newConf.frequency = 8683; // set to default
+				}
+				break;
+
+			case 'b': // read bandwidth
+				newConf.bandWidth = (uint8_t)readSerialD();
+				if (!(newConf.bandWidth == 250 ||
+						newConf.bandWidth == 125 ||
+						newConf.bandWidth == 62 ||
+						newConf.bandWidth == 41 ||
+						newConf.bandWidth == 31 ||
+						newConf.bandWidth == 20 ||
+						newConf.bandWidth == 15 ||
+						newConf.bandWidth == 10 )){
+					debugSerial.println("Invalid bandwidth [ 250 | 125 | 62 | 41 | 31 | 20 | 15 | 10 ]");
+					newConf.bandWidth = 250; // set to default
+				}
+				break;
+
+			case 'c': // read code rate
+				newConf.codeRate = (uint8_t)readSerialD();
+				if (newConf.codeRate < 5 || newConf.codeRate > 8){
+					debugSerial.println("Invalid code rate 4/[5-8]");
+					newConf.codeRate = 8; // set to default
+				}
+				break;
+
+			case 's': // read spread factor
+				newConf.spreadFactor = (uint8_t)readSerialD();
+				if (newConf.spreadFactor < 7 || newConf.spreadFactor > 12){
+					debugSerial.println("Invalid spread factor [7-12]");
+					newConf.spreadFactor = 12; // set to default
+				}
+				break;
+			}
+
+		if (newConf.mode >= 2)
+			switch (A){
+
+			case 'c': // set to confirmed
+				newConf.chnMsk &= ~CM_UCNF;
+				break;
+			case 'u': // set to unconfirmed
+				newConf.chnMsk |= CM_UCNF;
+				break;
+
+			case 'o': // set to otaa
+				newConf.chnMsk |= CM_OTAA;
+				resetKeyBuffer();
+				break;
+			case 'a': // set to ABP
+				newConf.chnMsk &= ~CM_OTAA;
+				resetKeyBuffer();
+				break;
+
+			case 'N': // Network session key for ABP
+				readSerialS(newConf.nwkSKey, KEYSIZE);
+				if (strlen(newConf.nwkSKey) < KEYSIZE){
+					debugSerial.println("Invalid network session key");
+					newConf.nwkSKey[0] = '\0';
+				}
+				break;
+
+			case 'A': // Application session key for ABP
+				readSerialS(newConf.appSKey, KEYSIZE);
+				if (strlen(newConf.appSKey) < KEYSIZE){
+					debugSerial.println("Invalid application session key");
+					newConf.appSKey[0] = '\0';
+				}
+				break;
+
+			case 'D': // Device address for ABP
+				readSerialS(newConf.devAddr, KEYSIZE/4);
+				if (strlen(newConf.devAddr) < KEYSIZE/4){
+					debugSerial.println("Invalid device address key");
+					newConf.devAddr[0] = '\0';
+				}
+				break;
+
+			case 'K': // Application Key for OTAA
+				readSerialS(newConf.appKey, KEYSIZE);
+				if (strlen(newConf.appKey) < KEYSIZE){
+					debugSerial.println("Invalid application key");
+					newConf.appKey[0] = '\0';
+				}
+				break;
+
+			case 'E': // EUI address for OTAA
+				readSerialS(newConf.appEui, KEYSIZE/2);
+				if (strlen(newConf.appEui) < KEYSIZE/2){
+					debugSerial.println("Invalid EUI address");
+					newConf.appEui[0] = '\0';
+				}
+				break;
+
+			case 'C':
+				newConf.chnMsk = readSerialH();
+				if (newConf.chnMsk < 0x01 || newConf.chnMsk > 0xFF ){ //TODO: this is limiting to EU868
+					debugSerial.println("Invalid channel mask [0x07-0xFFh]");
+					newConf.chnMsk = 0xFF; // set to default
+				}
+				break;
+
+			case 'd': // read data rate
+				newConf.dataRate = (uint8_t)readSerialD();
+				if (newConf.dataRate > 5){ // we exclude 6 and 7 for now
+					debugSerial.println("Invalid data rate [0-5]");
+					newConf.dataRate = 5; // set to default
+				}
+				break;
+
+			}
 	}
 
 }
