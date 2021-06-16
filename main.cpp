@@ -603,7 +603,13 @@ void readInput() {
 			break;
 
 		case 'I': // Print type of micro-controller
-			debugSerial.println(LoRaMgmtGetEUI());
+			{
+				char * EUI = LoRaMgmtGetEUI();
+				if (EUI)
+					debugSerial.println(EUI);
+				else
+					debugSerial.println("Could not retrieve EUI");
+			}
 			break;
 
 		case 'n': // disable debug print
