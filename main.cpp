@@ -9,11 +9,10 @@
 /* Strings 		*/
 
 const char prtSttStart[] PROGMEM = "Start test\n";
-const char prtSttPoll[] PROGMEM = "Poll for answer\n";
+const char prtSttRun[] PROGMEM = "Run test\n";
 const char prtSttStop[] PROGMEM = "Stop test\n";
 const char prtSttRetry[] PROGMEM = "Retry\n";
 const char prtSttEvaluate[] PROGMEM = "Evaluate\n";
-const char prtSttAddMeas[] PROGMEM = " - add measurement\n";
 const char prtSttReset[] PROGMEM = "Reset\n";
 const char prtSttRestart[] PROGMEM = "Restart - Init\n";
 const char prtSttEnd[] PROGMEM = "End test\n";
@@ -254,7 +253,7 @@ static enum { 	rError = -1,
 				rPrint,
 
 				rEnd = 20
-			} tstate = rInit;	// test run status
+			} tstate = rEnd;	// test run status
 
 static enum {	qIdle = 0,
 				qRun,
@@ -338,7 +337,7 @@ runTest(){
 				break;
 			}
 		}
-		debugSerial.print(prtSttPoll);
+		debugSerial.print(prtSttRun);
 		tstate = rRun;
 		// fall-through
 		// @suppress("No break at end of case")
@@ -388,8 +387,6 @@ runTest(){
 		// @suppress("No break at end of case")
 
 	case rEvaluate:
-		debugSerial.print(prtSttAddMeas);
-
 		ret = LoRaMgmtGetResults(trn);
 
 		if (debug) {
@@ -464,7 +461,12 @@ runTest(){
 
 	default:
 	case rEnd:
-		if (testReq != qIdle){
+		if (testReq == qRun){
+			// restart
+			tstate = rInit;
+		}
+		else if (testReq != qIdle){
+			// print stop
 			debugSerial.print(prtSttDone);
 			debugSerial.print(prtSttSelect);
 			testReq = qIdle;
@@ -506,7 +508,7 @@ void readInput() {
 				break;
 			case 1 : // dumb LoRa
 				newConf.prep = NULL;
-				newConf.start = &LoRaMgmtSend;
+				newConf.start = &LoRaMgmtSendDumb;
 				newConf.run = NULL;
 				newConf.frequency = 8683;
 				newConf.bandWidth = 250;
@@ -559,23 +561,18 @@ void readInput() {
 
 			break;
 		case 'R': // set to run
+			if (newConf.mode == 0) // do nothing
+				break;
 
-			if (newConf.mode >= 2)
-				if (newConf.frequency == 0){
-					debugSerial.println("Incomplete configuration!");
-					break;
-				}
-
-			if (newConf.mode >= 2)
-				if (!newConf.devAddr ||
-						!newConf.appEui ||
-						!newConf.appKey){
-					debugSerial.println("Incomplete configuration!");
-					break;
-				}
+			if ((newConf.mode == 1 && newConf.frequency == 0) ||
+				(newConf.mode >= 2 && (!newConf.devAddr ||
+									   !newConf.appEui ||
+									   !newConf.appKey))){
+				debugSerial.println("Incomplete configuration!");
+				break;
+			}
 
 			testReq = qRun;
-			tstate = rInit;
 			break;
 
 		case 'S': // stop test

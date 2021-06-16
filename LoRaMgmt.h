@@ -84,7 +84,7 @@ int LoRaMgmtSetup(const sLoRaConfiguration_t * conf);
 int LoRaMgmtJoin();
 
 int LoRaMgmtSend();
-int LoRaMgmtDumb();
+int LoRaMgmtSendDumb();
 int LoRaMgmtPoll();
 int LoRaMgmtUpdt();
 int LoRaMgmtRcnf();
