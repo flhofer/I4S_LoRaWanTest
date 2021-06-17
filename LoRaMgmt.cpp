@@ -65,7 +65,13 @@ generatePayload(byte *payload){
 	return payload;
 }
 
-
+/*
+ * xtoInt: Transform character to number
+ *
+ * Arguments: - Read Chanracter
+ *
+ * Return:	  - Read hex number 0-16
+ */
 static int
 xtoInt(char nChar) {
 	switch (nChar)
@@ -81,6 +87,14 @@ xtoInt(char nChar) {
 	}
 }
 
+/*
+ * printMessage: print a binary value as Hex characters
+ *
+ * Arguments: - byte buffer
+ * 			  - length of byte buffer
+ *
+ * Return:	  -
+ */
 static void
 printMessage(char* rcv, uint8_t len){
 	debugSerial.print("Received: ");
@@ -92,6 +106,20 @@ printMessage(char* rcv, uint8_t len){
 	debugSerial.println();
 }
 
+/*
+ * setActiveChannels: set number of active bits in channelmsk
+ *
+ * Arguments: - active channel mask
+ *
+ * Return:	  -
+ */
+static void
+setActiveChannels(uint16_t chnMsk){
+	actChan = 0; // get number of active channels in mask
+	for (; (chnMsk); chnMsk >>=1)
+		actChan += (uint8_t)(chnMsk & 0x1);
+}
+
 /*************** CALLBACK FUNCTIONS ********************/
 
 
@@ -101,7 +129,8 @@ printMessage(char* rcv, uint8_t len){
  *
  * Return:	  -
  */
-static void onMessage(size_t length, bool binary){
+static void
+onMessage(size_t length, bool binary){
 	char rcv[length+1];
 	unsigned int i = 0;
 	while (modem.available() && i < length) {
@@ -120,7 +149,8 @@ static void onMessage(size_t length, bool binary){
  *
  * Return:	  -
  */
-static void onBeforeTx(){
+static void
+onBeforeTx(){
 	timerMillisTS = millis();
 	timeTx = 0;
 	timeRx = 0;
@@ -133,7 +163,8 @@ static void onBeforeTx(){
  *
  * Return:	  -
  */
-static void onAfterTx(){
+static void
+onAfterTx(){
 	timeTx = millis() - timerMillisTS;
 }
 
@@ -143,7 +174,8 @@ static void onAfterTx(){
  *
  * Return:	  -
  */
-static void onAfterRx(){
+static void
+onAfterRx(){
 	timeToRx = millis() - timerMillisTS;
 	timeRx = timeToRx - timeTx - rxWindow1;
 	if (timeRx > 1000)
@@ -501,6 +533,7 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 	case 2 ... 4:
 			ret = setupLoRaWan(newConf);
 			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
+			setActiveChannels(newConf->chnMsk);
 	}
 	ret |= setTxPwr(newConf->mode, newConf->txPowerTst);
 
@@ -587,7 +620,7 @@ LoRaMgmtMain (){
 		break;
 	case iPoll:
 		startSleepTS = millis();
-		sleepMillis = 1000;	// simple retry timer 100ms, e.g. busy
+		sleepMillis = 1000;	// simple retry timer 1000ms, e.g. busy
 		internalState = iSleep;
 		break;
 	case iBusy:
