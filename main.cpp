@@ -445,6 +445,10 @@ void readInput() {
 		// work always
 		switch (A){
 
+		case '\n':
+		case '\r':
+			break;
+
 		case 'm': // read test mode
 			newConf.mode = (uint8_t)readSerialD();
 			if (newConf.mode > 4){
@@ -661,7 +665,7 @@ void readInput() {
 			case 'C':
 				newConf.chnMsk = readSerialH();
 				if (newConf.chnMsk < 0x01 || newConf.chnMsk > 0xFF ){ //TODO: this is limiting to EU868
-					debugSerial.println("Invalid channel mask [0x07-0xFFh]");
+					debugSerial.println("Invalid channel mask [0x01-0xFFh]");
 					newConf.chnMsk = 0xFF; // set to default
 				}
 				break;
