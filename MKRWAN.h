@@ -344,6 +344,10 @@ public:
 	  region = EU868;
 	  compat_mode = false;
 	  msize = ARDUINO_LORA_MAXBUFF;
+	  messageCallback = NULL;
+	  beforeTxCallback = NULL;
+	  afterTxCallback = NULL;
+	  afterRxCallback = NULL;
     }
 
 public:
