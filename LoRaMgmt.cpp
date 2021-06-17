@@ -267,9 +267,24 @@ setChannels(uint16_t chnMsk, uint8_t dataRate) {
 }
 
 /*
+ * loRaJoin: Join a LoRaWan network
+ *
+ * Arguments: - pointer to test configuration to use
+ *
+ * Return:	  returns 0 if successful, else -1
+ */
+static int
+loRaJoin(const sLoRaConfiguration_t * newConf){
+	if (newConf->confMsk & CM_OTAA)
+		return !modem.joinOTAA(newConf->appEui, newConf->appKey) * -1;
+	else
+		return !modem.joinABP(newConf->devAddr, newConf->nwkSKey, newConf->appSKey) * -1;
+}
+
+/*
  * setupLoRaWan: setup LoRaWan communication with modem
  *
- * Arguments: -
+ * Arguments: - pointer to test configuration to use
  *
  * Return:	  returns 0 if successful, else -1
  */
@@ -287,10 +302,8 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 
 	modem.publicNetwork(!(newConf->confMsk & CM_NPBLK));
 
-	if (newConf->confMsk & CM_RJN)
-		return ret *-1;
-
-	if (!LoRaMgmtJoin()) {
+	if (!(newConf->confMsk & CM_RJN) && loRaJoin(newConf))
+	{
 		// Something went wrong; are you indoor? Move near a window and retry
 		debugSerial.println("Network join failed");
 		return -1;
@@ -316,7 +329,7 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 /*
  * setupDumb: setup LoRa communication with modem
  *
- * Arguments: -
+ * Arguments: - pointer to test configuration to use
  *
  * Return:	  - return 0 if OK, -1 if error
  */
@@ -508,10 +521,7 @@ LoRaMgmtGetResults(sLoRaResutls_t * const res){
  */
 int
 LoRaMgmtJoin(){
-	if (conf->confMsk & CM_OTAA)
-		return modem.joinOTAA(conf->appEui, conf->appKey);
-	else
-		return modem.joinABP(conf->devAddr, conf->nwkSKey, conf->appSKey);
+	return !(loRaJoin(conf));
 }
 
 /*

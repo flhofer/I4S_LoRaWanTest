@@ -24,7 +24,7 @@
 typedef struct
 {
 	uint8_t	mode  = 0;			// test mode = 0 off, 1 LoRa, 2 LoRaWan, 3 LoRaWan + Remote, 4 LoRaWan Force Join
-	uint8_t confMsk;			// configuation mask bits
+	uint8_t confMsk;			// Configuration mask bits
 
 	// Common all Modes
 	uint8_t txPowerTst = 0;		// txPower setting for the low power test
