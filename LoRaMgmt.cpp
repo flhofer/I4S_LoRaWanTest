@@ -345,7 +345,7 @@ LoRaMgmtSend(){
 
 		modem.beginPacket();
 		modem.write(genbuf, conf->dataLen);
-		int ret = modem.endPacket(conf);
+		int ret = modem.endPacket(!(conf->confMsk & CM_UCNF));
 		if (ret < 0){
 			if (LORABUSY == ret ) // no chn -> pause for free-delay / active channels
 				internalState = iBusy;
