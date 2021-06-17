@@ -27,10 +27,13 @@ static int	pollcnt;			// un-conf poll retries
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
-static uint32_t startMillis;		// Last TX
 static uint32_t timeTx;				// Last TX
 static uint32_t timeRx;				// Last RX
 static uint32_t timeToRx;			// Last Total time
+static uint32_t	txCount;			// Transmission counter
+static uint32_t startSleepTS;		// relative MC time of Sleep begin
+static uint32_t timerMillisTS;		// relative MC time for timers
+static uint32_t startTestTS;		// relative MC time for test start
 static uint32_t sleepMillis;		// Time to remain in sleep
 static unsigned long rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
 static unsigned long rxWindow2 = 2000; // pause duration in ms between tx and rx2 TODO: get parameter
@@ -118,7 +121,7 @@ static void onMessage(size_t length, bool binary){
  * Return:	  -
  */
 static void onBeforeTx(){
-	startMillis = millis();
+	timerMillisTS = millis();
 	timeTx = 0;
 	timeRx = 0;
 	timeToRx = 0;
@@ -131,7 +134,7 @@ static void onBeforeTx(){
  * Return:	  -
  */
 static void onAfterTx(){
-	timeTx = millis() - startMillis;
+	timeTx = millis() - timerMillisTS;
 }
 
 /*
@@ -141,7 +144,7 @@ static void onAfterTx(){
  * Return:	  -
  */
 static void onAfterRx(){
-	timeToRx = millis() - startMillis;
+	timeToRx = millis() - timerMillisTS;
 	timeRx = timeToRx - timeTx - rxWindow1;
 	if (timeRx > 1000)
 		timeRx -= rxWindow2;
@@ -317,6 +320,7 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 int
 LoRaMgmtSendDumb(){
 	if (internalState != iSleep){	// Does never wait!
+		txCount++;
 		while (LoRa.beginPacket() == 0) {
 		  delay(1);
 		}
@@ -349,6 +353,7 @@ LoRaMgmtSend(){
 		}
 
 		pollcnt = 0;
+		txCount++;
 
 		// sent but no response from confirmed, or not confirmed msg, continue to next step
 		if (ret == 1 || !(conf->confMsk & CM_UCNF))
@@ -385,6 +390,7 @@ LoRaMgmtPoll(){
 				return -1;
 			}
 			pollcnt++;
+			txCount++;
 			return 0;
 		}
 	}
@@ -433,22 +439,32 @@ LoRaMgmtRemote(){
  *
  * Arguments: - pointer to Structure for the result data
  *
- * Return:	  - 0 if OK, <0 error
+ * Return:	  - 0 if OK, < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
 LoRaMgmtGetResults(sLoRaResutls_t * const res){
 	int ret = 0;
+	res->testTime = millis() - startTestTS;
+	res->txCount = txCount;
 	res->timeTx = timeTx;
 	res->timeRx = timeRx;
 	res->timeToRx = timeToRx;
-//	res->txFrq = ttn.getFrequency();
-	ret |= getChannels(&res->chnMsk);
-//	res->lastCR = ttn.getCR();
-	res->txDR = modem.getDataRate();
-	res->txPwr = modem.getPower();
-	res->rxRssi = modem.getRSSI();
-	res->rxSnr = modem.getSNR();
-	return ret * -1;
+	if (conf->mode == 1){
+		res->txFrq = conf->frequency*100000;
+		res->lastCR = conf->codeRate;
+		res->txDR = conf->spreadFactor;
+		res->txPwr = conf->txPowerTst;
+	}
+	else{
+		//	res->txFrq = modem.getFrequency();
+		ret |= getChannels(&res->chnMsk);
+		//	res->lastCR = modem.getCR();
+		res->txDR = modem.getDataRate();
+		res->txPwr = modem.getPower();
+		res->rxRssi = modem.getRSSI();
+		res->rxSnr = modem.getSNR();
+	}
+	return (ret == 0) ? 1 : -1;
 }
 
 /*
@@ -482,9 +498,7 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 			break;
 	case 1: ret = setupDumb(newConf);
 			break;
-	case 2:
-	case 3:
-	case 4:
+	case 2 ... 4:
 			ret = setupLoRaWan(newConf);
 			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
 	}
@@ -497,9 +511,12 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 	(void)generatePayload(genbuf);
 
 	pollcnt = 0;
+	txCount = 0;
 
 	if (ret == 0)
 		conf = newConf;
+
+	startTestTS = millis();
 	return ret;
 }
 
@@ -564,22 +581,22 @@ LoRaMgmtMain (){
 	case iIdle:
 		break;
 	case iSend:
-		startMillis = millis();
+		startSleepTS = millis();
 		sleepMillis = 100;	// simple retry timer 100ms, e.g. busy
 		internalState = iSleep;
 		break;
 	case iPoll:
-		startMillis = millis();
+		startSleepTS = millis();
 		sleepMillis = 1000;	// simple retry timer 100ms, e.g. busy
 		internalState = iSleep;
 		break;
 	case iBusy:
-		startMillis = millis();
+		startSleepTS = millis();
 		sleepMillis = RESFREEDEL/actChan;
 		internalState = iSleep;
 		break;
 	case iSleep:
-		if (millis() - startMillis > sleepMillis)
+		if (millis() - startSleepTS > sleepMillis)
 			internalState = iIdle;
 	}
 }

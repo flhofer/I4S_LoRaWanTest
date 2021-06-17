@@ -41,8 +41,6 @@ const char prtTblTms[] PROGMEM = " ms";
 // Working variables
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
 static sLoRaResutls_t * trn;					// Pointer to actual entry
-static long txCnt;								// transmission counter
-static long durationTest;						// test duration in ms
 
 static sLoRaConfiguration_t newConf;			// test Configuration
 static char keyArray[KEYBUFF];					// static array containing init keys
@@ -79,12 +77,12 @@ printScaled(uint32_t value, uint32_t Scale = 1000){
 /*
  * printTestResults(): Print LoRaWan communication test
  *
- * Arguments:	-
+ * Arguments:	- count to print
  *
  * Return:		-
  */
 static void
-printTestResults(){
+printTestResults(int count){
 	// use all local, do not change global
 	sLoRaResutls_t * trn = &testResults[0]; // Initialize results pointer
 
@@ -92,31 +90,13 @@ printTestResults(){
 	char buf[128];
 
 	debugSerial.print(prtSttResults);
-	for (int i = 1; i<= TST_MXRSLT; i++, trn++){
-		sprintf(buf, "%02d;%07lu;%07lu;0x%02X;%lu;%02u;%02d;%03d;%03d",
-				i, trn->timeTx, trn->timeRx,
+	for (int i = 1; i<= min(TST_MXRSLT, count); i++, trn++){
+		sprintf(buf, "%02d;%07lu;%07lu;%07lu;%07lu;0x%02X;%lu;%02u;%02d;%03d;%03d",
+				i, trn->testTime, trn->txCount, trn->timeTx, trn->timeRx,
 				trn->chnMsk, trn->txFrq, trn->txDR, trn->txPwr,
 				trn->rxRssi, trn->rxSnr);
 		debugSerial.println(buf);
 	}
-}
-
-/*
- * printTestResultsDumb(): print result from LoRa interference tests
- *
- * Arguments:	-
- *
- * Return:		-
- */
-static void
-printTestResultsDumb(){
-	// for printing
-	char buf[128];
-
-	debugSerial.print(prtSttResults);
-	sprintf(buf, "%07lu;%07lu;%lu;",
-			durationTest, txCnt, (long)newConf.frequency * 100000);
-	debugSerial.println(buf);
 }
 
 /*
@@ -238,8 +218,6 @@ resetKeyBuffer(){
 
 /*************** TEST MANAGEMENT FUNCTIONS*****************/
 
-static unsigned long startTs = 0; // loop timer
-
 // Enumeration for test status
 static enum { 	rError = -1,
 				rInit = 0,
@@ -250,7 +228,6 @@ static enum { 	rError = -1,
 
 				rEvaluate = 15,
 				rReset,
-				rPrint,
 
 				rEnd = 20
 			} tstate = rEnd;	// test run status
@@ -282,7 +259,6 @@ runTest(){
 
 	case rInit:
 		// reset at every test
-		txCnt = 0;
 		retries = 0;
 
 		// reset status on next test
@@ -297,14 +273,13 @@ runTest(){
 		}
 		tstate = rPrepare;
 		debugSerial.print(prtSttStart);
-		startTs = millis();
 		// fall-through
 		// @suppress("No break at end of case")
 
 	case rPrepare:
 		if (testReq >= qStop ){
 			tstate = rStop;
-			durationTest = millis() - startTs;
+			break;
 		}
 
 		if (newConf.prep &&
@@ -321,17 +296,17 @@ runTest(){
 
 		if (testReq >= qStop ){
 			tstate = rStop;
-			durationTest = millis() - startTs;
+			break;
 		}
 
-
 		if (newConf.start){
-			txCnt++;
 			if ((ret = newConf.start()) < 0){
 				tstate = rError;
 				break;
 			}
-			else if (ret == 1) {
+			else if (ret == 0)	// Busy!
+				break;
+			else if (ret == 2) {
 				tstate = rStop;
 				debugSerial.print(prtSttStop);
 				break;
@@ -346,13 +321,11 @@ runTest(){
 
 		if (testReq >= qStop ){
 			tstate = rStop;
-			durationTest = millis() - startTs;
+			break;
 		}
 
 		if (!newConf.run)
 			break;
-
-		txCnt++;
 
 		if ((ret = newConf.run()) < 0){
 			failed = 1;
@@ -361,7 +334,7 @@ runTest(){
 		else if (ret == 0)
 			break;
 		else if (ret == 2){
-			tstate = rPrint;
+			tstate = rEvaluate;
 			break;
 		}
 
@@ -420,7 +393,8 @@ runTest(){
 		// End of tests?
 		if (trn >= &testResults[TST_MXRSLT-1] || testReq >= qStop){
 			debugSerial.print(prtSttEnd);
-			tstate = rPrint;
+			printTestResults((trn-testResults)/sizeof(sLoRaResutls_t)+1);
+			tstate = rEnd;
 			break;
 		}
 
@@ -439,26 +413,6 @@ runTest(){
 	/*
 	 * Common states ending
 	 */
-	case rPrint:
-		switch (newConf.mode){
-		case 0:
-			break;
-
-		default:
-		case 1:
-		case 4:
-			printTestResultsDumb();
-			break;
-
-		case 2:
-		case 3:
-			printTestResults();
-			break;
-		}
-		tstate = rEnd;
-		// fall-through
-		// @suppress("No break at end of case")
-
 	default:
 	case rEnd:
 		if (testReq == qRun){
