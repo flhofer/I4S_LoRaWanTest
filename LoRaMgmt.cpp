@@ -312,6 +312,7 @@ setupDumb(const sLoRaConfiguration_t * newConf){
  * Arguments: -
  *
  * Return:	  status of sending, < 0 = error, 0 = busy, 1 = done, 2 = stop
+ * 			--- ALWAYS RETURNS 0
  */
 int
 LoRaMgmtSendDumb(){
@@ -320,7 +321,8 @@ LoRaMgmtSendDumb(){
 		  delay(1);
 		}
 		LoRa.write(genbuf, conf->dataLen);
-		return LoRa.endPacket(true); // true = async / non-blocking mode
+		//return
+		LoRa.endPacket(true); // true = async / non-blocking mode
 	}
 	return 0;
 }

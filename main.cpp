@@ -508,8 +508,8 @@ void readInput() {
 				break;
 			case 1 : // dumb LoRa
 				newConf.prep = NULL;
-				newConf.start = &LoRaMgmtSendDumb;
-				newConf.run = NULL;
+				newConf.start = NULL;
+				newConf.run = &LoRaMgmtSendDumb;
 				newConf.frequency = 8683;
 				newConf.bandWidth = 250;
 				newConf.codeRate = 8;
