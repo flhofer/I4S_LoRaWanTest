@@ -699,9 +699,9 @@ public:
   int poll() {
     if (millis() - lastPollTime < pollInterval) return 0;
     lastPollTime = millis();
-    // simply trigger a fake write
+    // simply trigger a send with no payload (no confirmation required)
     uint8_t dummy = 0;
-    return modemSend(&dummy, 1, true);
+    return modemSend(&dummy, 1, false);
   }
 
   bool factoryDefault() {
