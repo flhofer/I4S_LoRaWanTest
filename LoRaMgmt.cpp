@@ -15,7 +15,7 @@
 LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated")
 
 #define freqPlan EU868
-#define UNCF_POLL	5			// How many times to poll
+#define POLL_NO		5			// How many times to poll
 #define MAXLORALEN	250			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
 #define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
@@ -428,12 +428,15 @@ LoRaMgmtPoll(){
 
 		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
-			return modem.getMsgConfirmed();
+			pollcnt++;
+			if (pollcnt < POLL_NO)
+				return modem.getMsgConfirmed();
+			return -1;
 		}
 		else{
 			int ret = modem.poll(); // internal min-poll delay has to be set to x
 			if (ret <= 0){
-				if (pollcnt < UNCF_POLL){
+				if (pollcnt < POLL_NO){
 					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
 						internalState = iBusy;
 					return 0;	// return 0 until count
@@ -644,7 +647,7 @@ LoRaMgmtMain (){
 		if (false) // Duty cycle is off -> shouln't happen to be in busy
 			sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use airtime based on DR
 		else
-			sleepMillis = 1000;
+			sleepMillis = 3000;
 		internalState = iSleep;
 		break;
 	case iSleep:
