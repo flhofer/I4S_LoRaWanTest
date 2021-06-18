@@ -118,6 +118,8 @@ setActiveChannels(uint16_t chnMsk){
 	actChan = 0; // get number of active channels in mask
 	for (; (chnMsk); chnMsk >>=1)
 		actChan += (uint8_t)(chnMsk & 0x1);
+	if (!actChan)	// avoid DIV 0
+		actChan++;
 }
 
 /*************** CALLBACK FUNCTIONS ********************/
@@ -309,8 +311,8 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 		return -1;
 	}
 
-	// Set poll interval to 60 secs.
-	modem.minPollInterval(60);
+	// Set poll interval to 1 sec.
+	modem.minPollInterval(1); // for testing only
 
 	if (!(newConf->confMsk & CM_OTAA)){
 		// set to LorIoT standard RX, DR
@@ -418,17 +420,17 @@ LoRaMgmtSend(){
 int
 LoRaMgmtPoll(){
 	if (internalState == iIdle){
+		internalState = iPoll;
 
+		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
-			internalState = iSend;
 			return modem.getMsgConfirmed();
 		}
 		else{
-			internalState = iPoll;
-			int ret = modem.poll();
+			int ret = modem.poll(); // internal min-poll delay has to be set to x
 			if (ret <= 0){
 				if (pollcnt < UNCF_POLL){
-					if (LORABUSY == ret ) // no chn -> pause for free-delay / active channels
+					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
 						internalState = iBusy;
 					return 0;	// return 0 until count
 				}
@@ -625,15 +627,15 @@ LoRaMgmtMain (){
 		break;
 	case iSend:
 		startSleepTS = millis();
-		sleepMillis = 100;	// simple retry timer 100ms, e.g. busy
+		sleepMillis = 100;	// Sleep timer after send, minimum wait
 		internalState = iSleep;
 		break;
 	case iPoll:
 		startSleepTS = millis();
-		sleepMillis = 1000;	// simple retry timer 1000ms, e.g. busy
+		sleepMillis = 1000;	// simple retry timer 1000ms, e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
-	case iBusy:
+	case iBusy:	// TODO: lookup formula for duty cycle to find accurate waiting time -> disable when disabled
 		startSleepTS = millis();
 		sleepMillis = RESFREEDEL/actChan;
 		internalState = iSleep;
