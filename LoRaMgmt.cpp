@@ -16,12 +16,12 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 
 #define freqPlan EU868
 #define UNCF_POLL	5			// How many times to poll
-#define MAXLORALEN	252			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
+#define MAXLORALEN	250			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
 #define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
 
-static uint8_t actChan = 16;	// active channels
+static uint8_t actBands = 2;	// active channels
 static int	pollcnt;			// un-conf poll retries
 
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
@@ -107,19 +107,23 @@ printMessage(char* rcv, uint8_t len){
 }
 
 /*
- * setActiveChannels: set number of active bits in channelmsk
+ * setActiveBands: set number of active bands to determine pause time
  *
  * Arguments: - active channel mask
  *
  * Return:	  -
  */
 static void
-setActiveChannels(uint16_t chnMsk){
-	actChan = 0; // get number of active channels in mask
-	for (; (chnMsk); chnMsk >>=1)
-		actChan += (uint8_t)(chnMsk & 0x1);
-	if (!actChan)	// avoid DIV 0
-		actChan++;
+setActiveBands(uint16_t chnMsk){
+	actBands = 0;
+	if (chnMsk & 0x07) // base band [8680 - 8686)
+		actBands++;
+	if (chnMsk & 0xf8) // band 0 [8650 - 8670)
+		actBands++;
+	// Others are excluded
+
+	if (!actBands)	// avoid DIV 0
+		actBands++;
 }
 
 /*************** CALLBACK FUNCTIONS ********************/
@@ -545,7 +549,7 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 	case 2 ... 4:
 			ret = setupLoRaWan(newConf);
 			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
-			setActiveChannels(newConf->chnMsk);
+			setActiveBands(newConf->chnMsk);
 	}
 	ret |= setTxPwr(newConf->mode, newConf->txPowerTst);
 
@@ -635,9 +639,9 @@ LoRaMgmtMain (){
 		sleepMillis = 1000;	// simple retry timer 1000ms, e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
-	case iBusy:	// TODO: lookup formula for duty cycle to find accurate waiting time -> disable when disabled
+	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		sleepMillis = RESFREEDEL/actChan;
+		sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use airtime based on DR
 		internalState = iSleep;
 		break;
 	case iSleep:
