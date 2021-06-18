@@ -641,7 +641,10 @@ LoRaMgmtMain (){
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use airtime based on DR
+		if (false) // Duty cycle is off -> shouln't happen to be in busy
+			sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use airtime based on DR
+		else
+			sleepMillis = 1000;
 		internalState = iSleep;
 		break;
 	case iSleep:
