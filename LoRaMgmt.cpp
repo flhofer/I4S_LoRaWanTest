@@ -16,7 +16,7 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 
 #define freqPlan EU868
 #define POLL_NO		5			// How many times to poll
-#define MAXLORALEN	250			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
+#define MAXLORALEN	242			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
 #define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
@@ -42,6 +42,7 @@ static const sLoRaConfiguration_t * conf;
 static enum {	iIdle,
 				iSend,
 				iPoll,
+				iRetry,
 				iBusy,
 				iSleep,
 			} internalState;
@@ -426,27 +427,38 @@ LoRaMgmtPoll(){
 	if (internalState == iIdle){
 		internalState = iPoll;
 
+		int ret = modem.poll();
+
 		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
-			pollcnt++;
-			if (pollcnt < POLL_NO)
-				return modem.getMsgConfirmed();
-			return -1;
+			if (ret <= 0){
+				if (LORABUSY == ret ) { // No ACK received, wait until retry returns happens
+					internalState = iRetry;
+					return 0;
+				}
+				return ret;
+			}
+			return modem.getMsgConfirmed();
 		}
 		else{
-			int ret = modem.poll(); // internal min-poll delay has to be set to x
 			if (ret <= 0){
 				if (pollcnt < POLL_NO){
 					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
 						internalState = iBusy;
 					return 0;	// return 0 until count
 				}
-				return -1;
+				return ret;
 			}
 			pollcnt++;
 			txCount++;
-			return 0;
+			// print received telegram
+			char rcv[MAXLORALEN];
+			int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
+			printMessage(rcv, len);
+			return 1;
+
 		}
+
 	}
 	return 0;
 }
@@ -459,19 +471,17 @@ LoRaMgmtPoll(){
  * Return:	  status of polling, < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
-LoRaMgmtRemote(){
+LoRaMgmtRemote(){ // TODO: fix remote wait
 	delay(1000);
 	if (!modem.available()) {
 		// No down-link message received at this time.
 		return 0;
 	}
-	char rcv[MAXLORALEN];
-	unsigned int i = 0;
-	while (modem.available() && i < MAXLORALEN) {
-		rcv[i++] = (char)modem.read();
-	}
 
-	if (i == 1){ // one letter
+	char rcv[MAXLORALEN];
+	int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
+
+	if (len == 1){ // one letter
 		switch(rcv[0]){
 		case 'R':
 			return 1;
@@ -482,7 +492,7 @@ LoRaMgmtRemote(){
 	}
 
 	debugSerial.print("Invalid message, ");
-	printMessage(rcv, i);
+	printMessage(rcv, len);
 	return -1;
 }
 
@@ -642,12 +652,17 @@ LoRaMgmtMain (){
 		sleepMillis = 1000;	// simple retry timer 1000ms, e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
+	case iRetry:
+		startSleepTS = millis();
+		sleepMillis =  rxWindow1 + rxWindow2 + 1000;
+		internalState = iSleep;
+		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
 		if (false) // Duty cycle is off -> shouln't happen to be in busy
 			sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use airtime based on DR
 		else
-			sleepMillis = 3000;
+			sleepMillis = rxWindow1 + rxWindow2 + 1000;
 		internalState = iSleep;
 		break;
 	case iSleep:
