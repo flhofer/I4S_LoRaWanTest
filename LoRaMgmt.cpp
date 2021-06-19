@@ -474,28 +474,35 @@ LoRaMgmtPoll(){
  */
 int
 LoRaMgmtRemote(){ // TODO: fix remote wait
-	delay(1000);
-	if (!modem.available()) {
-		// No down-link message received at this time.
-		return 0;
-	}
+	if (internalState == iIdle){
+		internalState = iPoll;
 
-	char rcv[MAXLORALEN];
-	int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
+		int ret = modem.poll();
+		if (ret < 0 && ret != LORABUSY)
+			return ret;
 
-	if (len == 1){ // one letter
-		switch(rcv[0]){
-		case 'R':
-			return 1;
-
-		case 'S':
-			return 2;
+		if (!modem.available()) {
+			// No down-link message received at this time.
+			return 0;
 		}
-	}
 
-	debugSerial.print("Invalid message, ");
-	printMessage(rcv, len);
-	return -1;
+		char rcv[MAXLORALEN];
+		int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
+
+		if (len == 1){ // one letter
+			switch(rcv[0]){
+			case 'R':
+				return 1;
+
+			case 'S':
+				return 2;
+			}
+		}
+
+		debugSerial.print("Invalid message, ");
+		printMessage(rcv, len);
+	}
+	return 0;
 }
 
 /*************** MANAGEMENT FUNCTIONS ********************/
@@ -651,12 +658,12 @@ LoRaMgmtMain (){
 		break;
 	case iPoll:
 		startSleepTS = millis();
-		sleepMillis = 1000;	// simple retry timer 1000ms, e.g. ACK lost, = 2+-1s (random)
+		sleepMillis = 1000;	// simple retry timer 1000ms
 		internalState = iSleep;
 		break;
 	case iRetry:
 		startSleepTS = millis();
-		sleepMillis =  rxWindow1 + rxWindow2 + 1000;
+		sleepMillis =  rxWindow1 + rxWindow2 + 1000; // e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
