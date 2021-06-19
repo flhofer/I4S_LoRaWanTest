@@ -399,16 +399,18 @@ LoRaMgmtSend(){
 		modem.write(genbuf, conf->dataLen);
 		int ret = modem.endPacket(!(conf->confMsk & CM_UCNF));
 		if (ret < 0){
-			if (LORABUSY == ret ) // no chn -> pause for free-delay / active channels
+			if (LORABUSY == ret ){ // no channel available -> pause for free-delay / active channels
 				internalState = iBusy;
-			return 0;
+				return 0;
+			}
+			return ret;
 		}
 
 		pollcnt = 0;
 		txCount++;
 
-		// sent but no response from confirmed, or not confirmed msg, continue to next step
-		if (ret == 1 || !(conf->confMsk & CM_UCNF))
+		// sent, if unconfirmed goto poll, else stop
+		if ((conf->confMsk & CM_UCNF))
 			return 1;
 		return 2;
 	}
