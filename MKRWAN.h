@@ -285,7 +285,7 @@ static const char LORA_ERROR_NO_NETWORK[] = "+ERR_NO_NETWORK";
 static const char LORA_ERROR_RX[] = "+ERR_RX";
 static const char LORA_ERROR_UNKNOWN[] = "+ERR_UNKNOWN";
 
-static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.4a";
+static const char ARDUINO_FW_VERSION[] = "ARD-078 1.2.4";
 static const char ARDUINO_FW_VERSION_AT[] = "ARD-078 1.2.4";
 static const char ARDUINO_FW_IDENTIFIER[] = "ARD-078";
 
@@ -406,6 +406,7 @@ public:
     set(NWKS_KEY, nwkSKey);
     set(APPS_KEY, appSKey);
     network_joined = join(timeout);
+    delay(1000);
     return (getJoinStatus() == 1);
   }
 
