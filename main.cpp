@@ -265,7 +265,7 @@ runTest(){
 		memset(testResults,0, sizeof(testResults));
 		trn = &testResults[0];	// Init results pointer
 
-		if (LoRaMgmtSetup(&newConf))
+		if (LoRaMgmtSetup(&newConf, &trn))
 		{
 			tstate = rError;
 			break;
@@ -364,7 +364,7 @@ runTest(){
 		// @suppress("No break at end of case")
 
 	case rEvaluate:
-		ret = LoRaMgmtGetResults(trn);
+		ret = LoRaMgmtGetResults();
 
 		if (debug) {
 			debugSerial.print(prtTblCR);

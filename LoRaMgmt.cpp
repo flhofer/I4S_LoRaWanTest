@@ -28,10 +28,6 @@ static int32_t	fcu;			// frame counter
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
 
-static uint32_t timeTx;				// Last TX
-static uint32_t timeRx;				// Last RX
-static uint32_t timeToRx;			// Last Total time
-static uint32_t	txCount;			// Transmission counter
 static uint32_t startSleepTS;		// relative MC time of Sleep begin
 static uint32_t timerMillisTS;		// relative MC time for timers
 static uint32_t startTestTS;		// relative MC time for test start
@@ -48,6 +44,8 @@ static enum {	iIdle,
 				iSleep,
 			} internalState;
 
+
+static sLoRaResutls_t **resP;
 
 /********************** HELPERS ************************/
 
@@ -160,9 +158,9 @@ onMessage(size_t length, bool binary){
 static void
 onBeforeTx(){
 	timerMillisTS = millis();
-	timeTx = 0;
-	timeRx = 0;
-	timeToRx = 0;
+	(*resP)->timeTx = 0;
+	(*resP)->timeRx = 0;
+	(*resP)->timeToRx = 0;
 }
 
 /*
@@ -173,7 +171,7 @@ onBeforeTx(){
  */
 static void
 onAfterTx(){
-	timeTx = millis() - timerMillisTS;
+	(*resP)->timeTx = timerMillisTS = millis();
 }
 
 /*
@@ -184,10 +182,10 @@ onAfterTx(){
  */
 static void
 onAfterRx(){
-	timeToRx = millis() - timerMillisTS;
-	timeRx = timeToRx - timeTx - rxWindow1;
-	if (timeRx > 1000)
-		timeRx -= rxWindow2;
+	(*resP)->timeToRx = millis() - timerMillisTS;
+	(*resP)->timeRx = (*resP)->timeToRx - (*resP)->timeTx - rxWindow1;
+	if ((*resP)->timeRx > 1000)
+		(*resP)->timeRx -= rxWindow2;
 }
 
 /*
@@ -373,7 +371,7 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 int
 LoRaMgmtSendDumb(){
 	if (internalState != iSleep){	// Does never wait!
-		txCount++;
+		(*resP)->txCount++;
 		while (LoRa.beginPacket() == 0) {
 		  delay(1);
 		}
@@ -410,7 +408,7 @@ LoRaMgmtSend(){
 
 		internalState = iPoll;
 		pollcnt = 0;
-		txCount++;
+		(*resP)->txCount++;
 
 		return 1;
 	}
@@ -454,7 +452,7 @@ LoRaMgmtPoll(){
 				return ret;
 			}
 			pollcnt++;
-			txCount++;
+			(*resP)->txCount++;
 			// print received telegram
 			if (modem.available()){
 				char rcv[MAXLORALEN];
@@ -512,32 +510,30 @@ LoRaMgmtRemote(){ // TODO: fix remote wait
 /*
  * LoRaMgmtGetResults: getter for last experiment results
  *
- * Arguments: - pointer to Structure for the result data
+ * Arguments: -
  *
  * Return:	  - 0 if OK, < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
-LoRaMgmtGetResults(sLoRaResutls_t * const res){
+LoRaMgmtGetResults(){
+	if (!resP)
+		return -1;
 	int ret = 0;
-	res->testTime = millis() - startTestTS;
-	res->txCount = txCount;
-	res->timeTx = timeTx;
-	res->timeRx = timeRx;
-	res->timeToRx = timeToRx;
+	(*resP)->testTime = millis() - startTestTS;
 	if (conf->mode == 1){
-		res->txFrq = conf->frequency*100000;
-		res->lastCR = conf->codeRate;
-		res->txDR = conf->spreadFactor;
-		res->txPwr = conf->txPowerTst;
+		(*resP)->txFrq = conf->frequency*100000;
+		(*resP)->lastCR = conf->codeRate;
+		(*resP)->txDR = conf->spreadFactor;
+		(*resP)->txPwr = conf->txPowerTst;
 	}
 	else{
 		//	res->txFrq = modem.getFrequency();
-		ret |= getChannels(&res->chnMsk);
+		ret |= getChannels(&(*resP)->chnMsk);
 		//	res->lastCR = modem.getCR();
-		res->txDR = modem.getDataRate();
-		res->txPwr = modem.getPower();
-		res->rxRssi = modem.getRSSI();
-		res->rxSnr = modem.getSNR();
+		(*resP)->txDR = modem.getDataRate();
+		(*resP)->txPwr = modem.getPower();
+		(*resP)->rxRssi = modem.getRSSI();
+		(*resP)->rxSnr = modem.getSNR();
 	}
 	return (ret == 0) ? 1 : -1;
 }
@@ -562,7 +558,7 @@ LoRaMgmtJoin(){
  * Return:	  returns 0 if successful, else -1
  */
 int
-LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
+LoRaMgmtSetup(const sLoRaConfiguration_t * newConf, sLoRaResutls_t ** const res){
 	int ret = 0;
 	switch (newConf->mode){
 	default:
@@ -583,8 +579,10 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf){
 	// Prepare PayLoad of x bytes
 	(void)generatePayload(genbuf);
 
+	resP = res;
+
 	pollcnt = 0;
-	txCount = 0;
+	(*resP)->txCount = 0;
 
 	if (ret == 0)
 		conf = newConf;
