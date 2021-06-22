@@ -23,6 +23,7 @@ LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated
 
 static uint8_t actBands = 2;	// active channels
 static int	pollcnt;			// un-conf poll retries
+static int32_t	fcu;			// frame counter
 
 static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];			// buffer for generated message
@@ -325,7 +326,7 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 		ret |= !modem.setRX2DR(0);
 	}
 
-	modem.onMessage(&onMessage);
+//	modem.onMessage(&onMessage);
 	modem.onBeforeTx(&onBeforeTx);
 	modem.onAfterTx(&onAfterTx);
 	modem.onAfterRx(&onAfterRx);
@@ -395,6 +396,7 @@ LoRaMgmtSend(){
 	if (internalState == iIdle){
 		internalState = iSend;
 
+		fcu = modem.getFCU();
 		modem.beginPacket();
 		modem.write(genbuf, conf->dataLen);
 		int ret = modem.endPacket(!(conf->confMsk & CM_UCNF));
@@ -410,10 +412,7 @@ LoRaMgmtSend(){
 		pollcnt = 0;
 		txCount++;
 
-		// sent, if unconfirmed goto poll, else stop
-		if ((conf->confMsk & CM_UCNF))
-			return 1;
-		return 2;
+		return 1;
 	}
 	return 0;	// else busy
 }
@@ -430,20 +429,22 @@ LoRaMgmtPoll(){
 	if (internalState == iIdle){
 		internalState = iPoll;
 
-		int ret = modem.poll();
+		int32_t nfcu = modem.getFCU();
 
 		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
-			if (ret <= 0){
-				if (LORABUSY == ret ) { // No ACK received, wait until retry returns happens
-					internalState = iRetry;
-					return 0;
-				}
-				return ret;
+			if (nfcu != fcu){
+				internalState = iRetry;
+				return 0;
 			}
-			return modem.getMsgConfirmed();
+			return modem.getMsgConfirmed() ? 1 : -1 ;
 		}
 		else{
+			// Not yet sent?
+			if (nfcu != fcu){
+				return 0;
+			}
+			int ret = modem.poll();
 			if (ret <= 0){
 				if (pollcnt < POLL_NO){
 					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
@@ -461,9 +462,7 @@ LoRaMgmtPoll(){
 				printMessage(rcv, len);
 			}
 			return 1;
-
 		}
-
 	}
 	return 0;
 }
