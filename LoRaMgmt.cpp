@@ -406,6 +406,7 @@ LoRaMgmtSend(){
 			return ret;
 		}
 
+		internalState = iPoll;
 		pollcnt = 0;
 		txCount++;
 
@@ -454,9 +455,11 @@ LoRaMgmtPoll(){
 			pollcnt++;
 			txCount++;
 			// print received telegram
-			char rcv[MAXLORALEN];
-			int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
-			printMessage(rcv, len);
+			if (modem.available()){
+				char rcv[MAXLORALEN];
+				int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
+				printMessage(rcv, len);
+			}
 			return 1;
 
 		}
