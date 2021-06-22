@@ -268,7 +268,6 @@ runTest(){
 		if (LoRaMgmtSetup(&newConf))
 		{
 			tstate = rError;
-			debugSerial.print(prtSttErrExec);
 			break;
 		}
 		tstate = rPrepare;
@@ -285,8 +284,10 @@ runTest(){
 		if (newConf.prep &&
 			(ret = newConf.prep()) == 0)
 				break;
-		else if (ret < 0)
+		else if (ret < 0){
 			tstate = rError;
+			break;
+		}
 
 		tstate = rStart;
 		// fall-through
@@ -301,7 +302,10 @@ runTest(){
 
 		if (newConf.start){
 			if ((ret = newConf.start()) < 0){
-				tstate = rError;
+				failed = 1;
+				tstate = rStop;
+				debugSerial.print(prtSttErrExec);
+				debugSerial.print(prtSttStop);
 				break;
 			}
 			else if (ret == 0)	// Busy!
@@ -391,7 +395,7 @@ runTest(){
 		}
 
 		// End of tests?
-		if (trn >= &testResults[TST_MXRSLT-1] || testReq >= qStop){
+		if ((trn >= &testResults[TST_MXRSLT-1]) || (testReq >= qStop)){
 			debugSerial.print(prtSttEnd);
 			printTestResults((trn-testResults)/sizeof(sLoRaResutls_t)+1);
 			tstate = rEnd;
@@ -408,6 +412,12 @@ runTest(){
 	case rReset:
 		debugSerial.print(prtSttRestart);
 		tstate = rStart;
+		break;
+
+	case rError:
+		debugSerial.print(prtSttErrExec);
+		tstate = rEnd;
+		testReq = qStop;
 		break;
 
 	/*
