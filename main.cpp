@@ -236,6 +236,7 @@ static enum {	qIdle = 0,
 			} testReq = qIdle;	// test request status
 
 static int	retries; 			// un-conf send retries
+static int	failed;				// some part failed
 
 /*
  * runTest(): test runner, state machine
@@ -248,7 +249,6 @@ static void
 runTest(){
 
 	// reset at every call
-	int failed = 0;
 	int ret = 0;
 
 	LoRaMgmtMain();
@@ -315,6 +315,7 @@ runTest(){
 		}
 		debugSerial.print(prtSttRun);
 		tstate = rRun;
+		failed = 0;
 		// fall-through
 		// @suppress("No break at end of case")
 
@@ -349,9 +350,10 @@ runTest(){
 
 		// unsuccessful and retries left?
 		if (failed && (newConf.repeatSend > retries) && testReq < qStop){
-			tstate = rStart;
-			debugSerial.print(prtSttRetry);
-			(void)LoRaMgmtUpdt();
+			if (LoRaMgmtUpdt()){
+				tstate = rStart;
+				debugSerial.print(prtSttRetry);
+			}
 			break;
 		}
 
@@ -409,8 +411,10 @@ runTest(){
 		// @suppress("No break at end of case")
 
 	case rReset:
-		debugSerial.print(prtSttRestart);
-		tstate = rStart;
+		if (LoRaMgmtUpdt()){
+			debugSerial.print(prtSttRestart);
+			tstate = rStart;
+		}
 		break;
 
 	case rError:

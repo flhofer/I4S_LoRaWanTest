@@ -127,6 +127,7 @@ setActiveBands(uint16_t chnMsk){
 
 /*************** CALLBACK FUNCTIONS ********************/
 
+static void onMessage(size_t length, bool binary) __attribute__((unused));
 
 /*
  * onMessage: Callback function for message received
@@ -366,7 +367,7 @@ static int
 setupPacket(const sLoRaConfiguration_t * newConf){
 	int ret = 0;
 	ret |= !modem.setTxConfirmed(!(newConf->confMsk & CM_UCNF));
-	ret |= !modem.setPort(2 + (newConf->confMsk & CM_UCNF) >> 3);
+	ret |= !modem.setPort(2 + ((newConf->confMsk & CM_UCNF) >> 3));
 	return ret * -1;
 
 }
@@ -636,6 +637,8 @@ LoRaMgmtUpdt(){
 		// Prepare PayLoad of x bytes
 		(void)generatePayload(genbuf);
 
+		pollcnt = 0;
+
 		return 1;
 	}
 
@@ -704,7 +707,7 @@ LoRaMgmtMain (){
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
 		if (false) // Duty cycle is off -> shouln't happen to be in busy
-			sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use airtime based on DR
+			sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use air time based on DR
 		else
 			sleepMillis = rxWindow1 + rxWindow2 + 1000;
 		internalState = iSleep;
