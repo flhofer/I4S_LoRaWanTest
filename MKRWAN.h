@@ -1007,6 +1007,8 @@ private:
     }
 
     stream.write((uint8_t*)buff, len);
+    if (afterTxCallback)
+    	afterTxCallback();
 
     int8_t rc = waitResponse();
     if (rc == 1) {            ///< OK
@@ -1016,8 +1018,9 @@ private:
     } else {                  ///< timeout
       return -1;
     }
-    if (afterTxCallback)
-    	afterTxCallback();
+    if (afterRxCallback)
+    	afterRxCallback();
+
   }
 
   size_t modemGetMaxSize() {
