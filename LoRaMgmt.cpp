@@ -355,6 +355,22 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 	return 0;
 }
 
+/*
+ * setupPacket: setup LoRa packet parameters communication with modem
+ *
+ * Arguments: - pointer to test configuration to use
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
+static int
+setupPacket(const sLoRaConfiguration_t * newConf){
+	int ret = 0;
+	ret |= !modem.setTxConfirmed(!(newConf->confMsk & CM_UCNF));
+	ret |= !modem.setPort(2 + (newConf->confMsk & CM_UCNF) >> 3);
+	return ret * -1;
+
+}
+
 /*************** TEST SEND FUNCTIONS ********************/
 
 /*
@@ -373,7 +389,6 @@ LoRaMgmtSendDumb(){
 		  delay(1);
 		}
 		LoRa.write(genbuf, conf->dataLen);
-		//return
 		LoRa.endPacket(true); // true = async / non-blocking mode
 	}
 	return 0;
@@ -535,6 +550,7 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf,
 	case 2 ... 4:
 			ret = setupLoRaWan(newConf);
 			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
+			ret |= setupPacket(newConf);
 			setActiveBands(newConf->chnMsk);
 	}
 	ret |= setTxPwr(newConf->mode, newConf->txPowerTst);
