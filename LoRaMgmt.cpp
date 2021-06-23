@@ -170,7 +170,7 @@ onBeforeTx(){
  */
 static void
 onAfterTx(){
-	trn->timeTx = timerMillisTS = millis();
+	trn->timeTx = millis() - timerMillisTS;
 }
 
 /*
@@ -182,15 +182,18 @@ onAfterTx(){
 static void
 onAfterRx(){
 	trn->timeToRx = millis() - timerMillisTS;
-	trn->timeRx = trn->timeToRx - trn->timeTx - rxWindow1;
-	if (trn->timeRx > 1000)
+	trn->timeRx = trn->timeToRx - trn->timeTx;
+	if (trn->timeRx > rxWindow2)
 		trn->timeRx -= rxWindow2;
+	else
+		trn->timeRx -= rxWindow1;
 }
 
 /*
  * setTxPwr: set power index on modem
  *
- * Arguments: -
+ * Arguments: - used mode, 0-..4
+ * 			  - txPwr 0-20 for mode 1, 0-5 for mode >= 2
  *
  * Return:	  - return 0 if OK, -1 if error
  */
