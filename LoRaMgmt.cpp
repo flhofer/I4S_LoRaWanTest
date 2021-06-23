@@ -407,6 +407,8 @@ LoRaMgmtSend(){
 		internalState = iSend;
 
 		fcu = modem.getFCU();
+		if (fcu < 0)
+			return 0;
 		onBeforeTx();
 		modem.beginPacket();
 		modem.write(genbuf, conf->dataLen);
@@ -441,7 +443,7 @@ LoRaMgmtPoll(){
 		internalState = iPoll;
 
 		int32_t nfcu = modem.getFCU();
-		if (nfcu == fcu){
+		if (nfcu == fcu || nfcu < 0){
 			// Not yet sent?
 			internalState = iRetry;
 			return 0;
@@ -458,6 +460,8 @@ LoRaMgmtPoll(){
 				if (pollcnt < POLL_NO){
 					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
 						internalState = iBusy;
+					else
+						internalState = iRetry;
 					return 0;	// return 0 until count
 				}
 				pollcnt++;
@@ -593,15 +597,16 @@ LoRaMgmtGetResults(sLoRaResutls_t ** const res){
 		trn->txPwr = conf->txPowerTst;
 	}
 	else{
-		//	res->txFrq = modem.getFrequency();
+		trn->txFrq = modem.getFrequency();
 		ret |= getChannels(&trn->chnMsk);
-		//	res->lastCR = modem.getCR();
+		trn->lastCR = modem.getCR();
 		trn->txDR = modem.getDataRate();
 		trn->txPwr = modem.getPower();
 		trn->rxRssi = modem.getRSSI();
 		trn->rxSnr = modem.getSNR();
 	}
-	*res = trn++;
+	*res = trn;
+	trn++; // shift to next slot
 	return (ret == 0) ? 1 : -1;
 }
 
@@ -686,18 +691,14 @@ LoRaMgmtMain (){
 	case iIdle:
 		break;
 	case iSend:
+	case iRetry:
 		startSleepTS = millis();
 		sleepMillis = 100;	// Sleep timer after send, minimum wait
 		internalState = iSleep;
 		break;
 	case iPoll:
 		startSleepTS = millis();
-		sleepMillis = 1000;	// simple retry timer 1000ms
-		internalState = iSleep;
-		break;
-	case iRetry:
-		startSleepTS = millis();
-		sleepMillis =  rxWindow1 + rxWindow2 + 1000; // e.g. ACK lost, = 2+-1s (random)
+		sleepMillis = rxWindow1 + rxWindow2 + 1000; // e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
