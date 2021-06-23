@@ -344,10 +344,6 @@ public:
 	  region = EU868;
 	  compat_mode = false;
 	  msize = ARDUINO_LORA_MAXBUFF;
-	  messageCallback = NULL;
-	  beforeTxCallback = NULL;
-	  afterTxCallback = NULL;
-	  afterRxCallback = NULL;
     }
 
 public:
@@ -367,12 +363,6 @@ private:
   _lora_band    region;
   bool			compat_mode;
   size_t		msize;
-
-  // callbacks!
-  void (*messageCallback)(size_t size, bool binary);
-  void (*beforeTxCallback)(void);
-  void (*afterTxCallback)(void);
-  void (*afterRxCallback)(void);
 
 public:
   virtual int joinOTAA(const char *appEui, const char *appKey, const char *devEui, uint32_t timeout) {
@@ -907,24 +897,8 @@ public:
     return getIntValue(GF(AT_CFS)) == 1;
   }
 
-  void onMessage(void (*cb)(size_t size, bool binary))
-  {
-    messageCallback = cb;
-  }
-
-  void onBeforeTx(void (*cb)(void))
-  {
-    beforeTxCallback = cb;
-  }
-
-  void onAfterTx(void (*cb)(void))
-  {
-    afterTxCallback = cb;
-  }
-
-  void onAfterRx(void (*cb)(void))
-  {
-    afterRxCallback = cb;
+  bool getJoinStatus() {
+    return (getIntValue(GF(AT_NJS)));
   }
 
 private:
@@ -998,8 +972,6 @@ private:
         return -20;
     }
 
-    if (beforeTxCallback)
-  	  beforeTxCallback();
     if (confirmed) {
         sendAT(GF(AT_CTX " "), len);
     } else {
@@ -1007,8 +979,6 @@ private:
     }
 
     stream.write((uint8_t*)buff, len);
-    if (afterTxCallback)
-    	afterTxCallback();
 
     int8_t rc = waitResponse();
     if (rc == 1) {            ///< OK
@@ -1018,9 +988,6 @@ private:
     } else {                  ///< timeout
       return -1;
     }
-    if (afterRxCallback)
-    	afterRxCallback();
-
   }
 
   size_t modemGetMaxSize() {
@@ -1034,10 +1001,6 @@ private:
     	return msize;
     }
     return 0;
-  }
-
-  bool getJoinStatus() {
-    return (getIntValue(GF(AT_NJS)));
   }
 
   /* Utilities */
@@ -1153,8 +1116,6 @@ private:
 			  goto finish;
 			} else if ((data.endsWith(AT_RECV)
 					|| data.endsWith(AT_RECVB)) && a == '=') {
-			  if (afterRxCallback)
-			  	  afterRxCallback();
 			  (void)stream.readStringUntil(',').toInt();
 			  length = stream.readStringUntil('\r').toInt();
 			  (void)streamSkipUntil('\n');
@@ -1165,8 +1126,7 @@ private:
 				  length = 0;
 				  continue;
 			  }
-			  bool binary = data.endsWith(AT_RECVB);
-			  if (binary){ // Binary receive
+			  if (data.endsWith(AT_RECVB)){ // Binary receive
 				  char Hi = 0;
 				  for (int i = 0; i < length*2;) {
 					if (stream.available()) {
@@ -1185,12 +1145,6 @@ private:
 						i++;
 					}
 				  }
-
-		      if (messageCallback)
-		      {
-		        messageCallback(length, binary);
-		      }
-
 			  data = "";
 			  length = 0;
 			  continue;
