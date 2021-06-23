@@ -82,17 +82,18 @@ typedef struct {
 
 void LoRaMgmtMain();
 
-int LoRaMgmtSetup(const sLoRaConfiguration_t * conf, sLoRaResutls_t ** const res);
+int LoRaMgmtSetup(const sLoRaConfiguration_t * conf, sLoRaResutls_t * const result);
 int LoRaMgmtJoin();
 
 int LoRaMgmtSend();
 int LoRaMgmtSendDumb();
 int LoRaMgmtPoll();
-int LoRaMgmtUpdt();
-int LoRaMgmtRcnf();
 int LoRaMgmtRemote();
 
-int LoRaMgmtGetResults();
+int LoRaMgmtGetResults(sLoRaResutls_t ** const res);
+
 const char* LoRaMgmtGetEUI();
+int LoRaMgmtUpdt();
+int LoRaMgmtRcnf();
 
 #endif /* LORAMGMT_H_ */

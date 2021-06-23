@@ -40,8 +40,6 @@ const char prtTblTms[] PROGMEM = " ms";
 
 // Working variables
 static sLoRaResutls_t testResults[TST_MXRSLT];	// Storage for test results
-static sLoRaResutls_t * trn;					// Pointer to actual entry
-
 static sLoRaConfiguration_t newConf;			// test Configuration
 static char keyArray[KEYBUFF];					// static array containing init keys
 
@@ -263,9 +261,8 @@ runTest(){
 
 		// reset status on next test
 		memset(testResults,0, sizeof(testResults));
-		trn = &testResults[0];	// Init results pointer
 
-		if (LoRaMgmtSetup(&newConf, &trn))
+		if (LoRaMgmtSetup(&newConf, &testResults[0]))
 		{
 			tstate = rError;
 			break;
@@ -364,45 +361,47 @@ runTest(){
 		// @suppress("No break at end of case")
 
 	case rEvaluate:
-		ret = LoRaMgmtGetResults();
+		{
+			sLoRaResutls_t * trn = NULL;
+			ret = LoRaMgmtGetResults(&trn);
 
-		if (debug) {
-			debugSerial.print(prtTblCR);
-			debugSerial.print(trn->lastCR);
-			debugSerial.print(prtTblDR);
-			debugSerial.print(trn->txDR);
-			debugSerial.print(prtTblChnMsk);
-			debugSerial.println(trn->chnMsk);
-			debugSerial.print(prtTblFrq);
-			debugSerial.print(trn->txFrq);
-			debugSerial.print(prtTblPwr);
-			debugSerial.print(trn->txPwr);
-			debugSerial.print(prtTblRssi);
-			debugSerial.print(trn->rxRssi);
-			debugSerial.print(prtTblSnr);
-			debugSerial.println(trn->rxSnr);
+			if (debug) {
+				debugSerial.print(prtTblCR);
+				debugSerial.print(trn->lastCR);
+				debugSerial.print(prtTblDR);
+				debugSerial.print(trn->txDR);
+				debugSerial.print(prtTblChnMsk);
+				debugSerial.println(trn->chnMsk);
+				debugSerial.print(prtTblFrq);
+				debugSerial.print(trn->txFrq);
+				debugSerial.print(prtTblPwr);
+				debugSerial.print(trn->txPwr);
+				debugSerial.print(prtTblRssi);
+				debugSerial.print(trn->rxRssi);
+				debugSerial.print(prtTblSnr);
+				debugSerial.println(trn->rxSnr);
 
-			debugSerial.print(prtTblTTx);
-			printScaled(trn->timeTx);
-			debugSerial.print(prtTblTms);
-			debugSerial.print(prtTblTRx);
-			printScaled(trn->timeRx);
-			debugSerial.print(prtTblTms);
-			debugSerial.print(prtTblTTl);
-			printScaled(trn->timeToRx);
-			debugSerial.print(prtTblTms);
-			debugSerial.println();
+				debugSerial.print(prtTblTTx);
+				printScaled(trn->timeTx);
+				debugSerial.print(prtTblTms);
+				debugSerial.print(prtTblTRx);
+				printScaled(trn->timeRx);
+				debugSerial.print(prtTblTms);
+				debugSerial.print(prtTblTTl);
+				printScaled(trn->timeToRx);
+				debugSerial.print(prtTblTms);
+				debugSerial.println();
+			}
+
+			// End of tests?
+			if ((trn >= &testResults[TST_MXRSLT-1]) || (testReq >= qStop)){
+				debugSerial.print(prtSttEnd);
+				printTestResults((trn-testResults)/sizeof(sLoRaResutls_t)+1);
+				tstate = rEnd;
+				break;
+			}
 		}
 
-		// End of tests?
-		if ((trn >= &testResults[TST_MXRSLT-1]) || (testReq >= qStop)){
-			debugSerial.print(prtSttEnd);
-			printTestResults((trn-testResults)/sizeof(sLoRaResutls_t)+1);
-			tstate = rEnd;
-			break;
-		}
-
-		trn++;
 		tstate = rReset;
 		debugSerial.print(prtSttReset);
 

@@ -12,7 +12,7 @@
 #include <LoRa.h>
 #include <stdlib.h>				// ARM standard library
 
-LoRaModem modem(loraSerial); // @suppress("Abstract class cannot be instantiated")
+LoRaModem modem(loraSerial);	// @suppress("Abstract class cannot be instantiated")
 
 #define freqPlan EU868
 #define POLL_NO		5			// How many times to poll
@@ -25,17 +25,18 @@ static uint8_t actBands = 2;	// active channels
 static int	pollcnt;			// un-conf poll retries
 static int32_t	fcu;			// frame counter
 
-static unsigned rnd_contex;			// pseudo-random generator context (for reentrant)
-static byte genbuf[MAXLORALEN];			// buffer for generated message
+static unsigned rnd_contex;		// pseudo-random generator context (for reentrant)
+static byte genbuf[MAXLORALEN];	// buffer for generated message
 
-static uint32_t startSleepTS;		// relative MC time of Sleep begin
-static uint32_t timerMillisTS;		// relative MC time for timers
-static uint32_t startTestTS;		// relative MC time for test start
-static uint32_t sleepMillis;		// Time to remain in sleep
-static unsigned long rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
-static unsigned long rxWindow2 = 2000; // pause duration in ms between tx and rx2 TODO: get parameter
+static uint32_t startSleepTS;	// relative MC time of Sleep begin
+static uint32_t timerMillisTS;	// relative MC time for timers
+static uint32_t startTestTS;	// relative MC time for test start
+static uint32_t sleepMillis;	// Time to remain in sleep
+static uint32_t rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
+static uint32_t rxWindow2 = 2000; // pause duration in ms between tx and rx2 TODO: get parameter
 
-static const sLoRaConfiguration_t * conf;
+static const sLoRaConfiguration_t * conf;	// Pointer to configuration entry
+static sLoRaResutls_t * trn;				// Pointer to actual entry
 static enum {	iIdle,
 				iSend,
 				iPoll,
@@ -44,8 +45,6 @@ static enum {	iIdle,
 				iSleep,
 			} internalState;
 
-
-static sLoRaResutls_t **resP;
 
 /********************** HELPERS ************************/
 
@@ -68,7 +67,7 @@ generatePayload(byte *payload){
 /*
  * xtoInt: Transform character to number
  *
- * Arguments: - Read Chanracter
+ * Arguments: - Read Character
  *
  * Return:	  - Read hex number 0-16
  */
@@ -158,9 +157,9 @@ onMessage(size_t length, bool binary){
 static void
 onBeforeTx(){
 	timerMillisTS = millis();
-	(*resP)->timeTx = 0;
-	(*resP)->timeRx = 0;
-	(*resP)->timeToRx = 0;
+	trn->timeTx = 0;
+	trn->timeRx = 0;
+	trn->timeToRx = 0;
 }
 
 /*
@@ -171,7 +170,7 @@ onBeforeTx(){
  */
 static void
 onAfterTx(){
-	(*resP)->timeTx = timerMillisTS = millis();
+	trn->timeTx = timerMillisTS = millis();
 }
 
 /*
@@ -182,10 +181,10 @@ onAfterTx(){
  */
 static void
 onAfterRx(){
-	(*resP)->timeToRx = millis() - timerMillisTS;
-	(*resP)->timeRx = (*resP)->timeToRx - (*resP)->timeTx - rxWindow1;
-	if ((*resP)->timeRx > 1000)
-		(*resP)->timeRx -= rxWindow2;
+	trn->timeToRx = millis() - timerMillisTS;
+	trn->timeRx = trn->timeToRx - trn->timeTx - rxWindow1;
+	if (trn->timeRx > 1000)
+		trn->timeRx -= rxWindow2;
 }
 
 /*
@@ -371,7 +370,7 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 int
 LoRaMgmtSendDumb(){
 	if (internalState != iSleep){	// Does never wait!
-		(*resP)->txCount++;
+		trn->txCount++;
 		while (LoRa.beginPacket() == 0) {
 		  delay(1);
 		}
@@ -408,7 +407,7 @@ LoRaMgmtSend(){
 
 		internalState = iPoll;
 		pollcnt = 0;
-		(*resP)->txCount++;
+		trn->txCount++;
 
 		return 1;
 	}
@@ -452,7 +451,7 @@ LoRaMgmtPoll(){
 				return ret;
 			}
 			pollcnt++;
-			(*resP)->txCount++;
+			trn->txCount++;
 			// print received telegram
 			if (modem.available()){
 				char rcv[MAXLORALEN];
@@ -473,7 +472,7 @@ LoRaMgmtPoll(){
  * Return:	  status of polling, < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
-LoRaMgmtRemote(){ // TODO: fix remote wait
+LoRaMgmtRemote(){
 	if (internalState == iIdle){
 		internalState = iPoll;
 
@@ -508,57 +507,16 @@ LoRaMgmtRemote(){ // TODO: fix remote wait
 /*************** MANAGEMENT FUNCTIONS ********************/
 
 /*
- * LoRaMgmtGetResults: getter for last experiment results
+ * LoRaMgmtSetup: Setup LoRaWan communication with Modem
  *
- * Arguments: -
+ * Arguments: - result structure pointer to list of results
  *
- * Return:	  - 0 if OK, < 0 = error, 0 = busy, 1 = done, 2 = stop
+ * Return:	  - returns 0 if successful, else -1
  */
 int
-LoRaMgmtGetResults(){
-	if (!resP)
-		return -1;
-	int ret = 0;
-	(*resP)->testTime = millis() - startTestTS;
-	if (conf->mode == 1){
-		(*resP)->txFrq = conf->frequency*100000;
-		(*resP)->lastCR = conf->codeRate;
-		(*resP)->txDR = conf->spreadFactor;
-		(*resP)->txPwr = conf->txPowerTst;
-	}
-	else{
-		//	res->txFrq = modem.getFrequency();
-		ret |= getChannels(&(*resP)->chnMsk);
-		//	res->lastCR = modem.getCR();
-		(*resP)->txDR = modem.getDataRate();
-		(*resP)->txPwr = modem.getPower();
-		(*resP)->rxRssi = modem.getRSSI();
-		(*resP)->rxSnr = modem.getSNR();
-	}
-	return (ret == 0) ? 1 : -1;
-}
+LoRaMgmtSetup(const sLoRaConfiguration_t * newConf,
+		sLoRaResutls_t * const result){
 
-/*
- * LoRaMgmtJoin: Join a LoRaWan network
- *
- * Arguments: -
- *
- * Return:	  returns < 0 = error, 0 = busy, 1 = done, 2 = stop
- */
-int
-LoRaMgmtJoin(){
-	return !(loRaJoin(conf));
-}
-
-/*
- * LoRaMgmtSetup: setup LoRaWan communication with modem
- *
- * Arguments: - noJoin, i.e. do not join the network
- *
- * Return:	  returns 0 if successful, else -1
- */
-int
-LoRaMgmtSetup(const sLoRaConfiguration_t * newConf, sLoRaResutls_t ** const res){
 	int ret = 0;
 	switch (newConf->mode){
 	default:
@@ -579,10 +537,10 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf, sLoRaResutls_t ** const res)
 	// Prepare PayLoad of x bytes
 	(void)generatePayload(genbuf);
 
-	resP = res;
+	trn = result;
 
 	pollcnt = 0;
-	(*resP)->txCount = 0;
+	trn->txCount = 0;
 
 	if (ret == 0)
 		conf = newConf;
@@ -592,7 +550,51 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf, sLoRaResutls_t ** const res)
 }
 
 /*
- * LoRaMgmtUpdt: update LoRa message buffer
+ * LoRaMgmtGetResults: getter for last experiment results
+ *
+ * Arguments: - result structure pointer
+ *
+ * Return:	  - 0 if OK, < 0 = error, 0 = busy, 1 = done, 2 = stop
+ */
+int
+LoRaMgmtGetResults(sLoRaResutls_t ** const res){
+	if (!trn)
+		return -1;
+	int ret = 0;
+	trn->testTime = millis() - startTestTS;
+	if (conf->mode == 1){
+		trn->txFrq = conf->frequency*100000;
+		trn->lastCR = conf->codeRate;
+		trn->txDR = conf->spreadFactor;
+		trn->txPwr = conf->txPowerTst;
+	}
+	else{
+		//	res->txFrq = modem.getFrequency();
+		ret |= getChannels(&trn->chnMsk);
+		//	res->lastCR = modem.getCR();
+		trn->txDR = modem.getDataRate();
+		trn->txPwr = modem.getPower();
+		trn->rxRssi = modem.getRSSI();
+		trn->rxSnr = modem.getSNR();
+	}
+	*res = trn++;
+	return (ret == 0) ? 1 : -1;
+}
+
+/*
+ * LoRaMgmtJoin: Join a LoRaWan network
+ *
+ * Arguments: -
+ *
+ * Return:	  returns < 0 = error, 0 = busy, 1 = done, 2 = stop
+ */
+int
+LoRaMgmtJoin(){
+	return !(loRaJoin(conf));
+}
+
+/*
+ * LoRaMgmtUpdt: Update LoRa message buffer
  *
  * Arguments: -
  *
@@ -612,7 +614,7 @@ LoRaMgmtUpdt(){
 }
 
 /*
- * LoRaMgmtRcnf: reset modem and reconf
+ * LoRaMgmtRcnf: reset modem and reconfiguration
  *
  * Arguments: -
  *
@@ -625,7 +627,13 @@ LoRaMgmtRcnf(){
 	return 0;
 }
 
-
+/*
+ * LoRaMgmtGetEUI: get EUI of the micro-controller
+ *
+ * Arguments: -
+ *
+ * Return:	  - return 0 if OK, -1 if error
+ */
 const char*
 LoRaMgmtGetEUI(){
 	if (!conf || !conf->devEui){
@@ -637,6 +645,8 @@ LoRaMgmtGetEUI(){
 	}
 	return conf->devEui;
 }
+
+/*************** MAIN CALL FUNCTIONS ********************/
 
 /*
  * LoRaMgmtMain: state machine for the LoRa Control
