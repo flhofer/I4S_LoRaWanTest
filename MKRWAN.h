@@ -265,11 +265,14 @@ const T& Max(const T& a, const T& b)
 #define AT_CHANMASK   "+CHANMASK"
 #define AT_CHANDEFMASK "+CHANDEFMASK"
 
+#define AT_MSIZE	  "+MSIZE"
+#define AT_CR		  "+CR"
+#define AT_FRQ		  "+FRQ"
+
 #define AT_EVENT	  "+EVENT"
 #define AT_UART		  "+UART"
 #define AT_FACNEW	  "+FACNEW"
 #define AT_SLEEP	  "+SLEEP"
-#define AT_MSIZE	  "+MSIZE"
 #define AT_EQ		  "="
 #define AT_QM		  "?"
 
@@ -899,6 +902,14 @@ public:
 
   bool getJoinStatus() {
     return (getIntValue(GF(AT_NJS)));
+  }
+
+  int32_t getCR() {
+    return getIntValue(GF(AT_CR));
+  }
+
+  int32_t getFrequency() {
+    return getIntValue(GF(AT_FRQ));
   }
 
 private:
