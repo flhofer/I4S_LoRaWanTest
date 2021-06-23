@@ -245,7 +245,7 @@ getChannels(uint16_t * chnMsk){ // TODO: for now only EU868
 }
 
 /*
- * setChannels:
+ * setChannels: set the Channel-Mask and the wanted data rate
  *
  * Arguments: - pointer to channel enable bit mask to use, 0 off, 1 on
  * 			  - dataRate for test start, (disables ADR)
@@ -326,11 +326,6 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 		ret |= !modem.setRX2DR(0);
 	}
 
-//	modem.onMessage(&onMessage);
-	modem.onBeforeTx(&onBeforeTx);
-	modem.onAfterTx(&onAfterTx);
-	modem.onAfterRx(&onAfterRx);
-
 	return ret *-1;
 }
 
@@ -397,9 +392,11 @@ LoRaMgmtSend(){
 		internalState = iSend;
 
 		fcu = modem.getFCU();
+		onBeforeTx();
 		modem.beginPacket();
 		modem.write(genbuf, conf->dataLen);
 		int ret = modem.endPacket(!(conf->confMsk & CM_UCNF));
+		onAfterTx();
 		if (ret < 0){
 			if (LORABUSY == ret ){ // no channel available -> pause for free-delay / active channels
 				internalState = iBusy;
@@ -411,7 +408,6 @@ LoRaMgmtSend(){
 		internalState = iPoll;
 		pollcnt = 0;
 		trn->txCount++;
-
 		return 1;
 	}
 	return 0;	// else busy
@@ -430,20 +426,18 @@ LoRaMgmtPoll(){
 		internalState = iPoll;
 
 		int32_t nfcu = modem.getFCU();
+		if (nfcu == fcu){
+			// Not yet sent?
+			internalState = iRetry;
+			return 0;
+		}
 
 		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
-			if (nfcu != fcu){
-				internalState = iRetry;
-				return 0;
-			}
+			onAfterRx();
 			return modem.getMsgConfirmed() ? 1 : -1 ;
 		}
 		else{
-			// Not yet sent?
-			if (nfcu != fcu){
-				return 0;
-			}
 			int ret = modem.poll();
 			if (ret <= 0){
 				if (pollcnt < POLL_NO){
@@ -451,17 +445,28 @@ LoRaMgmtPoll(){
 						internalState = iBusy;
 					return 0;	// return 0 until count
 				}
+				pollcnt++;
 				return ret;
 			}
+
 			pollcnt++;
 			trn->txCount++;
-			// print received telegram
+
+			// read receive buffer
 			if (modem.available()){
+				// message received
+				onAfterRx();
 				char rcv[MAXLORALEN];
 				int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
 				printMessage(rcv, len);
+				return 1;
 			}
-			return 1;
+			else {
+				// No message received
+				if (pollcnt <= POLL_NO)
+					return 0;
+				return -1;
+			}
 		}
 	}
 	return 0;
