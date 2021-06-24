@@ -720,7 +720,7 @@ public:
 
   bool power(_rf_mode mode, uint8_t transmitPower) { // transmitPower can be between 0 and 5
 	sendAT(GF(AT_TXP), GF(AT_EQ), mode, ",", transmitPower);
-	return (compat_mode && waitResponse() == 1);
+	return (waitResponse() == 1);
   }
 
   int32_t getPower() {
