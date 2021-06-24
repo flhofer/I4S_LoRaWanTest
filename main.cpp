@@ -411,7 +411,7 @@ runTest(){
 		// @suppress("No break at end of case")
 
 	case rReset:
-		if (LoRaMgmtUpdt()){
+		if (LoRaMgmtRcnf()){
 			debugSerial.print(prtSttRestart);
 			retries = 0;
 			tstate = rStart;
@@ -516,7 +516,8 @@ void readInput() {
 
 		case 'l': // read data length
 			newConf.dataLen = (uint8_t)readSerialD();
-			if (newConf.dataLen > 250 || newConf.dataLen == 0 ){
+			if ((newConf.dataLen > 242 && newConf.mode >=2) // Maximum LoRaWan application payload
+					|| newConf.dataLen == 0 ){
 				debugSerial.println("Invalid data length [1-250]");
 				newConf.dataLen = 1; // set to default
 			}
