@@ -413,6 +413,7 @@ runTest(){
 	case rReset:
 		if (LoRaMgmtUpdt()){
 			debugSerial.print(prtSttRestart);
+			retries = 0;
 			tstate = rStart;
 		}
 		break;
