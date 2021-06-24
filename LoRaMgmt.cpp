@@ -458,7 +458,7 @@ LoRaMgmtPoll(){
 		else{
 			int ret = modem.poll();
 			if (ret <= 0){
-				if (pollcnt < POLL_NO){
+				if (pollcnt < POLL_NO-1){
 					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
 						internalState = iBusy;
 					else
@@ -598,7 +598,8 @@ LoRaMgmtGetResults(sLoRaResutls_t ** const res){
 		trn->txPwr = conf->txPowerTst;
 	}
 	else{
-		trn->txFrq = modem.getFrequency();
+		int32_t a = modem.getFrequency();
+		trn->txFrq = (a==-1) ? 0 : a;
 		ret |= getChannels(&trn->chnMsk);
 		trn->lastCR = modem.getCR();
 		trn->txDR = modem.getDataRate();
