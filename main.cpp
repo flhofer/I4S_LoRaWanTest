@@ -398,8 +398,9 @@ runTest(){
 			// End of tests?
 			if ((trn >= &testResults[TST_MXRSLT-1]) || (testReq >= qStop)){
 				debugSerial.print(prtSttEnd);
-				printTestResults((trn-testResults)/sizeof(sLoRaResutls_t)+1);
+				printTestResults((trn-&testResults[0])+1); // Typed difference !
 				tstate = rEnd;
+				testReq = qStop;
 				break;
 			}
 		}
@@ -411,12 +412,17 @@ runTest(){
 		// @suppress("No break at end of case")
 
 	case rReset:
-		if (LoRaMgmtRcnf()){
+		if ((ret = LoRaMgmtRcnf()) == 1){
 			debugSerial.print(prtSttRestart);
 			retries = 0;
 			tstate = rStart;
+			break;
 		}
-		break;
+		else if (ret == 0)
+			break;
+
+		// fall-through
+		// @suppress("No break at end of case")
 
 	case rError:
 		debugSerial.print(prtSttErrExec);

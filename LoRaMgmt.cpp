@@ -654,13 +654,11 @@ LoRaMgmtUpdt(){
 int
 LoRaMgmtRcnf(){
 	if (internalState == iIdle){
-		if (!LoRaMgmtUpdt())
-			return 0;
-
 		internalState = iPoll; // wait for a poll timer before continuing to next step
+//		if (!(conf->confMsk & CM_UCNF))
+//			return modem.restart() ? 0 : -1;
 
-		if ((conf->confMsk & CM_UCNF))
-			return modem.restart() ? 0 : -1;
+		return !LoRaMgmtSetup(conf, trn)? 1 :  -1;
 	}
 	return 0;
 }
