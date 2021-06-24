@@ -573,7 +573,7 @@ public:
     int size = 4*getChannelMaskSize(region);
 
     String channel_mask_str = "0";
-    sendAT(GF(AT_CHANMASK AT_QM));
+    sendAT(GF(AT_CHANMASK), GF(AT_QM));
 	if ((!compat_mode && waitResponse(GF(AT_CHANMASK)) == 1)
 			|| (compat_mode && waitResponse() == 1)) {
         channel_mask_str = stream.readStringUntil('\r');
@@ -664,11 +664,11 @@ public:
   String version() {
 	fw_version = "";
 	int ret = 0;
-	sendAT(GF(AT_DEV), AT_QM);
+	sendAT(GF(AT_DEV), GF(AT_QM));
 	if ((ret = waitResponse(GF(AT_DEV),GF(LORA_OK))) == 1 || ret == 2) {
 		fw_version = stream.readStringUntil('\r');
 	}
-	sendAT(GF(AT_VER), AT_QM);
+	sendAT(GF(AT_VER), GF(AT_QM));
 	if ((ret = waitResponse(GF(AT_VER),GF(LORA_OK))) == 1 || ret == 2) {
 		fw_version += " " + stream.readStringUntil('\r');
 	}
@@ -711,7 +711,7 @@ public:
       return false;
     }
     sendAT(GF(AT_RESET));
-    if (waitResponse(10000L, AT_EVENT AT_EQ "0,0") != 1) {
+    if (waitResponse(10000L, GF(AT_EVENT) GF(AT_EQ) "0,0") != 1) {
       return false;
     }
     delay(1000);
@@ -825,7 +825,7 @@ public:
 	  			|| (compat_mode && len > 56))
 		return false;
 
-    sendAT(GF(AT_SEND " "));
+    sendAT(GF(AT_SEND), " ");
 	stream.write((uint8_t*)buff, len);
 	return (waitResponse() == 1);
   }
@@ -834,7 +834,7 @@ public:
 	if ((!compat_mode && len > 119)		// 128 - 'AT+SENDB '
 			|| (compat_mode && len > 55))
 		return false;
-    sendAT(GF(AT_SENDB " "));
+    sendAT(GF(AT_SENDB), " ");
 	stream.write((uint8_t*)buff, len);
 	return (waitResponse() == 1);
   }
@@ -925,7 +925,7 @@ private:
   bool join(uint32_t timeout) {
     sendAT(GF(AT_JOIN));
     sendAT();
-    if (waitResponse(timeout, AT_EVENT AT_EQ "1,1") != 1) {
+    if (waitResponse(timeout, GF(AT_EVENT) GF(AT_EQ) "1,1") != 1) {
       return false;
     }
     (void)streamSkipUntil('\r');
@@ -979,9 +979,9 @@ private:
     }
 
     if (confirmed) {
-        sendAT(GF(AT_CTX " "), len);
+        sendAT(GF(AT_CTX), " ", len);
     } else {
-        sendAT(GF(AT_UTX " "), len);
+        sendAT(GF(AT_UTX), " ", len);
     }
 
     stream.write((uint8_t*)buff, len);
@@ -1120,8 +1120,8 @@ private:
 			} else if (r8 && data.endsWith(r8)) {
 			  index = 8;
 			  goto finish;
-			} else if ((data.endsWith(AT_RECV)
-					|| data.endsWith(AT_RECVB)) && a == '=') {
+			} else if ((data.endsWith(GF(AT_RECV))
+					|| data.endsWith(GF(AT_RECVB))) && a == '=') {
 			  (void)stream.readStringUntil(',').toInt();
 			  length = stream.readStringUntil('\r').toInt();
 			  (void)streamSkipUntil('\n');
@@ -1132,7 +1132,7 @@ private:
 				  length = 0;
 				  continue;
 			  }
-			  if (data.endsWith(AT_RECVB)){ // Binary receive
+			  if (data.endsWith(GF(AT_RECVB))){ // Binary receive
 				  char Hi = 0;
 				  for (int i = 0; i < length*2;) {
 					if (stream.available()) {
@@ -1196,7 +1196,7 @@ finish:
 
   String getStringValue(ConstStr cmd){
 	String value = "";
-	sendAT(cmd, AT_QM);
+	sendAT(cmd, GF(AT_QM));
 	if ((!compat_mode && waitResponse(cmd) == 1)
 			|| (compat_mode && waitResponse() == 1)) {
 		value = stream.readStringUntil('\r');
@@ -1206,7 +1206,7 @@ finish:
 
   int32_t getIntValue(ConstStr cmd){
 	int32_t value = -1;
-	sendAT(cmd, AT_QM);
+	sendAT(cmd, GF(AT_QM));
 	if ((!compat_mode && waitResponse(cmd) == 1)
 			|| (compat_mode && waitResponse() == 1)) {
 		value = stream.readStringUntil('\r').toInt();
@@ -1216,7 +1216,7 @@ finish:
 
   template<typename T, typename U>
   bool setValue(T cmd, U value) {
-	sendAT(cmd, AT_EQ, value);
+	sendAT(cmd, GF(AT_EQ), value);
 	return (waitResponse() == 1);
   }
 
