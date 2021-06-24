@@ -483,7 +483,7 @@ LoRaMgmtPoll(){
 			}
 			else {
 				// No message received
-				if (pollcnt <= POLL_NO)
+				if (pollcnt < POLL_NO)
 					return 0;
 				return -1;
 			}
@@ -607,8 +607,7 @@ LoRaMgmtGetResults(sLoRaResutls_t ** const res){
 		trn->rxRssi = modem.getRSSI();
 		trn->rxSnr = modem.getSNR();
 	}
-	*res = trn;
-	trn++; // shift to next slot
+	*res = trn++;// shift to next slot
 	return (ret == 0) ? 1 : -1;
 }
 
@@ -617,7 +616,7 @@ LoRaMgmtGetResults(sLoRaResutls_t ** const res){
  *
  * Arguments: -
  *
- * Return:	  returns < 0 = error, 0 = busy, 1 = done, 2 = stop
+ * Return:	  - returns < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
 LoRaMgmtJoin(){
@@ -633,7 +632,6 @@ LoRaMgmtJoin(){
  */
 int
 LoRaMgmtUpdt(){
-
 	if (internalState == iIdle){
 		// Prepare PayLoad of x bytes
 		(void)generatePayload(genbuf);
@@ -651,12 +649,19 @@ LoRaMgmtUpdt(){
  *
  * Arguments: -
  *
- * Return:	  - return 0 if OK, -1 if error
+ * Return:	  - returns < 0 = error, 0 = busy, 1 = done, 2 = stop
  */
 int
 LoRaMgmtRcnf(){
-	if (!(conf->confMsk & CM_UCNF))
-		return modem.restart() ? 0 : -1;
+	if (internalState == iIdle){
+		if (!LoRaMgmtUpdt())
+			return 0;
+
+		internalState = iPoll; // wait for a poll timer before continuing to next step
+
+		if ((conf->confMsk & CM_UCNF))
+			return modem.restart() ? 0 : -1;
+	}
 	return 0;
 }
 
