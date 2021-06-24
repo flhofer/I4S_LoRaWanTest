@@ -1122,7 +1122,7 @@ private:
 			  goto finish;
 			} else if ((data.endsWith(GF(AT_RECV))
 					|| data.endsWith(GF(AT_RECVB))) && a == '=') {
-			  (void)stream.readStringUntil(',').toInt();
+			  __attribute__((unused)) int port = stream.readStringUntil(',').toInt();
 			  length = stream.readStringUntil('\r').toInt();
 			  (void)streamSkipUntil('\n');
 			  (void)streamSkipUntil('\n');
