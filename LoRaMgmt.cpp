@@ -645,7 +645,9 @@ LoRaMgmtGetResults(sLoRaResutls_t ** const res){
  */
 int
 LoRaMgmtJoin(){
-	return !(loRaJoin(conf));
+	(void)LoRaMgmtSetup(conf, trn);
+	(void)loRaJoin(conf);
+	return 0;
 }
 
 /*
@@ -697,14 +699,11 @@ LoRaMgmtRcnf(){
  */
 const char*
 LoRaMgmtGetEUI(){
-	if (!conf || !conf->devEui){
-		if (!modem.begin(freqPlan)) {
-			debugSerial.println("Failed to start module");
-			return NULL;
-		};
-		return modem.deviceEUI().c_str();
-	}
-	return conf->devEui;
+	if (!modem.begin(freqPlan)) {
+		debugSerial.println("Failed to start module");
+		return NULL;
+	};
+	return modem.deviceEUI().c_str();
 }
 
 /*************** MAIN CALL FUNCTIONS ********************/
