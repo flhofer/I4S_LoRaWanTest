@@ -476,6 +476,7 @@ void readInput() {
 				newConf.mode = 0; // set to default
 			}
 			resetKeyBuffer();
+			newConf.confMsk &= ~CM_RJN;
 			switch (newConf.mode)
 			{
 			default:
@@ -507,6 +508,7 @@ void readInput() {
 				newConf.prep = NULL;
 				newConf.start = NULL;
 				newConf.run = &LoRaMgmtJoin;
+				newConf.confMsk |= CM_RJN;
 				break;
 			}
 
