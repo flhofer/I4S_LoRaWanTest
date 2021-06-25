@@ -20,6 +20,7 @@ LoRaModem modem(loraSerial);	// @suppress("Abstract class cannot be instantiated
 #define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
+#define MACHDRFTR	13			// Length in bytes of MACHDR + FHDR + FPORT + MIC
 
 static uint8_t actBands = 2;	// active channels
 static int	pollcnt;			// un-conf poll retries
@@ -33,7 +34,7 @@ static uint32_t timerMillisTS;	// relative MC time for timers
 static uint32_t startTestTS;	// relative MC time for test start
 static uint32_t sleepMillis;	// Time to remain in sleep
 static uint32_t rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
-static uint32_t rxWindow2 = 2000; // pause duration in ms between tx and rx2 TODO: get parameter
+static uint32_t rxWindow2 = 1000; // pause duration in ms between rx1 and rx2 TODO: get parameter
 
 static const sLoRaConfiguration_t * conf;	// Pointer to configuration entry
 static sLoRaResutls_t * trn;				// Pointer to actual entry
@@ -42,6 +43,7 @@ static enum {	iIdle,
 				iPoll,
 				iRetry,
 				iBusy,
+				iChnWait,
 				iSleep,
 			} internalState;
 
@@ -183,11 +185,27 @@ onAfterTx(){
 static void
 onAfterRx(){
 	trn->timeToRx = millis() - timerMillisTS;
-	trn->timeRx = trn->timeToRx - trn->timeTx;
+	trn->timeRx = trn->timeToRx - trn->timeTx - rxWindow1;
 	if (trn->timeRx > rxWindow2)
 		trn->timeRx -= rxWindow2;
-	else
-		trn->timeRx -= rxWindow1;
+}
+
+/*
+ * computeAirTime:
+ *
+ * Arguments: - payload length
+ * 			  - data rate (7-12)
+ *
+ * Return:	  - expected airTime in ms
+ */
+static uint32_t
+computeAirTime(uint8_t dataLen, uint8_t dataRate){
+
+	static const uint32_t dataRates[] =  {250, 440, 980, 1760, 3125, 5470};
+
+	dataLen+=MACHDRFTR;
+
+	return dataLen * 1000 / dataRates[Max(12-dataRate, 0)];
 }
 
 /*
@@ -420,6 +438,10 @@ LoRaMgmtSend(){
 				internalState = iBusy;
 				return 0;
 			}
+			else if (-9 == ret){ // MKR does not have it
+				internalState = iChnWait;
+				return 0;
+			}
 			return ret;
 		}
 
@@ -459,8 +481,10 @@ LoRaMgmtPoll(){
 			int ret = modem.poll();
 			if (ret <= 0){
 				if (pollcnt < POLL_NO-1){
-					if (LORABUSY == ret ) // no channel available -> pause for duty cycle-delay / active channels)
+					if (LORABUSY == ret ) //
 						internalState = iBusy;
+					else if (-9 == ret)   // MKR does not have it no channel available -> pause for duty cycle-delay prop
+						internalState = iChnWait;
 					else
 						internalState = iRetry;
 					return 0;	// return 0 until count
@@ -706,15 +730,23 @@ LoRaMgmtMain (){
 		break;
 	case iPoll:
 		startSleepTS = millis();
-		sleepMillis = rxWindow1 + rxWindow2 + 1000; // e.g. ACK lost, = 2+-1s (random)
+		trn->txDR = modem.getDataRate();
+		sleepMillis = rxWindow1 + rxWindow2 + computeAirTime(conf->dataLen, trn->txDR) + 1000; // e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		if (false) // Duty cycle is off -> shouln't happen to be in busy
-			sleepMillis = RESFREEDEL/actBands;	// More bands, less wait TODO: use air time based on DR
-		else
-			sleepMillis = rxWindow1 + rxWindow2 + 1000;
+		trn->txDR = modem.getDataRate();
+		sleepMillis = rxWindow1 + rxWindow2 + computeAirTime(conf->dataLen, trn->txDR);
+		internalState = iSleep;
+		break;
+	case iChnWait:
+		startSleepTS = millis();
+		trn->txDR = modem.getDataRate();
+		{
+			uint32_t timeAir = computeAirTime(conf->dataLen, trn->txDR);
+			sleepMillis =  timeAir * 100 - timeAir; // This is for Channel 1-3, others * 1000
+		}
 		internalState = iSleep;
 		break;
 	case iSleep:
