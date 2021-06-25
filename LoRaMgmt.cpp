@@ -598,10 +598,11 @@ LoRaMgmtGetResults(sLoRaResutls_t ** const res){
 		trn->txPwr = conf->txPowerTst;
 	}
 	else{
-		int32_t a = modem.getFrequency();
-		trn->txFrq = (a==-1) ? 0 : a;
+//		int32_t a = modem.getFrequency(); Not implemented in the Mac Layer, always reads 0
+//		trn->txFrq = (a==-1) ? 0 : a;
 		ret |= getChannels(&trn->chnMsk);
-		trn->lastCR = modem.getCR();
+//		trn->lastCR = modem.getCR();	// Hard-coded in the Mac layer, always reads 4/5
+		trn->lastCR = 5;
 		trn->txDR = modem.getDataRate();
 		trn->txPwr = modem.getPower();
 		trn->rxRssi = modem.getRSSI();
@@ -654,7 +655,7 @@ LoRaMgmtUpdt(){
 int
 LoRaMgmtRcnf(){
 	if (internalState == iIdle){
-		internalState = iPoll; // wait for a poll timer before continuing to next step
+//		internalState = iPoll; // wait for a poll timer before continuing to next step
 //		if (!(conf->confMsk & CM_UCNF))
 //			return modem.restart() ? 0 : -1;
 
