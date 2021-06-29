@@ -1,15 +1,16 @@
-// Only modify this file to include
-// - function definitions (prototypes)
-// - include files
-// - extern variable definitions
-// In the appropriate section
+/*
+ * main.h
+ *
+ *  Created on: May 25, 2020
+ *      Author: Florian Hofer
+ */
 
-#ifndef _LoRaWanTest_H_
-#define _LoRaWanTest_H_
+#ifndef _MAIN_H_
+#define _MAIN_H_
+
 #include "Arduino.h"
-//add your includes for the project LoRaWanTest here
 
-//end of add your includes here
+// Serial connection definition
 #define debugSerial SerialUSB		// USB Serial
 #define loraSerial SerialLoRa		// Hardware serial
 
