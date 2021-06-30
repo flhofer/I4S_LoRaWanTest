@@ -1,4 +1,10 @@
-// Do not remove the include below
+/*
+ * main.cpp
+ *
+ *  Created on: May 25, 2020
+ *      Author: Florian Hofer
+ */
+
 #include "main.h"
 #include "LoRaMgmt.h"			// LoRaWan modem management
 
@@ -20,7 +26,6 @@ const char prtSttPollErr[] PROGMEM = "Poll - No response from server.\n";
 const char prtSttDone[] PROGMEM = "done\n";
 const char prtSttErrExec[] PROGMEM = "ERROR: during state execution\n";
 const char prtSttErrText[] PROGMEM = "ERROR: test malfunction\n";
-const char prtSttWrnConf[] PROGMEM = "WARN: Invalid test configuration\n";
 const char prtSttSelect[] PROGMEM = "Select Test:\n";
 const char prtSttResults[] PROGMEM = "Results:\n";
 
@@ -448,6 +453,7 @@ runTest(){
 	}
 
 }
+
 /*
  * readInput(): read input string
  *

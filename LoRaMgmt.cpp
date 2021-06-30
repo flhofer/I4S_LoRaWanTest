@@ -47,7 +47,6 @@ static enum {	iIdle,
 				iSleep,
 			} internalState;
 
-
 /********************** HELPERS ************************/
 
 /*
