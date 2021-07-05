@@ -10,7 +10,7 @@
 
 #define TST_MXRSLT	30			// What's the max number of test results we allow?
 #define LEDBUILDIN	PORT_PA20	// MKRWan1300 build in led position
-#define KEYBUFF		73			// Max total usage of key buffers = 32 + 32 + 16 + 3*\0
+#define KEYBUFF		83			// Max total usage of key buffers = 32 + 32 + 16 + 3*\0
 #define KEYSIZE		32			// 32
 /* Strings 		*/
 
