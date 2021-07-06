@@ -22,6 +22,8 @@ LoRaModem modem(loraSerial);	// @suppress("Abstract class cannot be instantiated
 #define RESFREEDEL	40000		// ~resource freeing delay ETSI requirement air-time reduction
 #define MACHDRFTR	13			// Length in bytes of MACHDR + FHDR + FPORT + MIC
 
+#define MIN(a, b)	(a < b) ? a : b
+
 static uint8_t actBands = 2;	// active channels
 static int	pollcnt;			// un-conf poll retries
 static int32_t	fcu;			// frame counter
@@ -204,7 +206,7 @@ computeAirTime(uint8_t dataLen, uint8_t dataRate){
 
 	dataLen+=MACHDRFTR;
 
-	return dataLen * 8000 / dataRates[dataRate];
+	return (uint32_t)dataLen * 8000l / dataRates[MIN(dataRate, 5)];
 }
 
 /*
