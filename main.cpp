@@ -701,7 +701,7 @@ void readInput() {
 
 			case 'd': // read data rate
 				newConf.dataRate = (uint8_t)readSerialD();
-				if (newConf.dataRate > 5){ // we exclude 6 and 7 for now
+				if (newConf.dataRate > 5 && newConf.dataRate != 255){ // we exclude 6 and 7 for now
 					debugSerial.println("Invalid data rate [0-5]");
 					newConf.dataRate = 5; // set to default
 				}
