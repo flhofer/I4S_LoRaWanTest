@@ -474,7 +474,7 @@ LoRaMgmtPoll(){
 		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
 			onAfterRx();
-			return modem.getMsgConfirmed() ? 1 : -1 ;
+			return modem.getMsgConfirmed() ? 2 : -1 ;
 		}
 		else{
 			int ret = modem.poll();
