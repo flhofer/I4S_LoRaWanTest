@@ -446,7 +446,7 @@ LoRaMgmtSend(){
 			return ret;
 		}
 
-		internalState = iPoll;
+		internalState = iBusy;
 		pollcnt = 0;
 		trn->txCount++;
 		return 1;
@@ -476,6 +476,7 @@ LoRaMgmtPoll(){
 		// Confirmed packages trigger a retry after a polling retry delay.
 		if (!(conf->confMsk & CM_UCNF)){
 			onAfterRx();
+			internalState = iIdle;
 			return modem.getMsgConfirmed() ? 2 : -1 ;
 		}
 		else{
@@ -504,6 +505,7 @@ LoRaMgmtPoll(){
 				char rcv[MAXLORALEN];
 				int len = modem.readBytesUntil('\r', rcv, MAXLORALEN);
 				printMessage(rcv, len);
+				internalState = iIdle;
 				return 1;
 			}
 			else {
@@ -736,8 +738,7 @@ LoRaMgmtMain (){
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		trn->txDR = modem.getDataRate();
-		sleepMillis = rxWindow1 + rxWindow2 + computeAirTime(conf->dataLen, trn->txDR);
+		sleepMillis = rxWindow1; // Min send time
 		internalState = iSleep;
 		break;
 	case iChnWait:
