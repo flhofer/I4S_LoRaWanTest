@@ -94,8 +94,11 @@ printTestResults(int count){
 
 	debugSerial.print(prtSttResults);
 	for (int i = 1; i<= min(TST_MXRSLT, count); i++, trn++){
-		sprintf(buf, "%02d;%07lu;%07lu;%07lu;%07lu;0x%02X;%lu;%02u;%02d;%03d;%03d",
-				i, trn->testTime, trn->txCount, trn->timeTx, trn->timeRx,
+		sprintf(buf, "%02d;%07lu;%07lu;%06lu.%03u;%06lu.%03u;%06lu.%03u;0x%02X;%lu;%02u;%02d;%03d;%03d",
+				i, trn->testTime, trn->txCount,
+				trn->timeTx/1000,	(uint16_t)trn->timeTx%1000,
+				trn->timeRx/1000,	(uint16_t)trn->timeRx%1000,
+				trn->timeToRx/1000, (uint16_t)trn->timeToRx%1000,
 				trn->chnMsk, trn->txFrq, trn->txDR, trn->txPwr,
 				trn->rxRssi, trn->rxSnr);
 		debugSerial.println(buf);
