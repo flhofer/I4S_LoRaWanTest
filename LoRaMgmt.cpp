@@ -387,6 +387,7 @@ setupPacket(const sLoRaConfiguration_t * newConf){
 	int ret = 0;
 	ret |= !modem.setTxConfirmed(!(newConf->confMsk & CM_UCNF));
 	ret |= !modem.setPort(2 + ((newConf->confMsk & CM_UCNF) >> 3));
+	ret |= !modem.format(FMT_BIN);
 	return ret * -1;
 
 }

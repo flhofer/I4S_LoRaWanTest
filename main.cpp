@@ -530,9 +530,8 @@ void readInput() {
 
 		case 'l': // read data length
 			newConf.dataLen = (uint8_t)readSerialD();
-			if ((newConf.dataLen > 242 && newConf.mode >=2) // Maximum LoRaWan application payload
-					|| newConf.dataLen == 0 ){
-				debugSerial.println("Invalid data length [1-250]");
+			if (newConf.dataLen > 242 && newConf.mode >=2){ // Maximum LoRaWan application payload
+				debugSerial.println("Invalid data length [0-242]");
 				newConf.dataLen = 1; // set to default
 			}
 			break;
