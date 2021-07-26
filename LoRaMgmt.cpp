@@ -187,8 +187,6 @@ static void
 onAfterRx(){
 	trn->timeToRx = millis() - timerMillisTS;
 	trn->timeRx = trn->timeToRx - trn->timeTx - rxWindow1;
-	if (trn->timeRx > rxWindow2)
-		trn->timeRx -= rxWindow2;
 }
 
 /*
