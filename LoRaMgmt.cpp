@@ -448,6 +448,9 @@ LoRaMgmtSend(){
 		internalState = iBusy;
 		pollcnt = 0;
 		trn->txCount++;
+
+		if (conf->repeatSend == 0)
+			return 0; // If set to infinite, repeat send command until end
 		return 1;
 	}
 	return 0;	// else busy
