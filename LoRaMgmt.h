@@ -77,7 +77,7 @@ typedef struct {
 	uint8_t  txDR;			// Tx data rate
 	int8_t   txPwr;			// Tx power index used
 	int8_t   rxRssi;		// last rx RSSI, default -128
-	uint8_t  rxSnr;			// last rx SNR, default -128
+	int8_t   rxSnr;			// last rx SNR, default -128
 } sLoRaResutls_t;
 
 void LoRaMgmtMain();
