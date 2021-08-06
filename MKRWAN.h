@@ -975,20 +975,18 @@ private:
         return -20;
     }
 
-    if (formatBin)
-    	len *=2; // ->TO hex
-
     if (confirmed) {
-        sendAT(GF(AT_CTX), " ", len);
+        sendAT(GF(AT_CTX), " ", formatBin ? len*2 : len);
     } else {
-        sendAT(GF(AT_UTX), " ", len);
+        sendAT(GF(AT_UTX), " ", formatBin ? len*2 : len);
     }
     if (formatBin){
-    	char chr[3];
-    	for (size_t i = 0; i<len; i+=2, buff=(uint8_t *)buff+1){
-    		sprintf(chr, "%02x", *(uint8_t *)buff);
-    		stream.write(chr, 2);
-    	}
+		unsigned char * pin = (uint8_t *)buff;
+		const char * hex = "0123456789ABCDEF";
+		for(; pin < buff+len; pin++){
+			stream.write(hex[(*pin>>4) & 0xF]);
+			stream.write(hex[ *pin     & 0xF]);
+		}
     }
     else
     	stream.write((uint8_t*)buff, len);
@@ -1093,7 +1091,7 @@ private:
     data.reserve(msize);
     int8_t index = -1;
     int length = 0;
-    int a = 0;
+    int a = -1;
     unsigned long startMillis = millis();
     do {
       YIELD();
@@ -1172,7 +1170,7 @@ private:
       }
     } while (millis() - startMillis < timeout);
 finish:
-	if (a != '+') // no follow-up command, get terminator from buffer
+	if (a != -1 && a != '+') // no follow-up command, get terminator from buffer
 		(void)stream.read();
 
     if (index == -1) {
