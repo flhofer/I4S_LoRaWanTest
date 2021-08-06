@@ -584,129 +584,142 @@ void readInput() {
 		default:
 			intp = 1;
 		}
-		if (intp && newConf.mode == 1)
-			switch (A){
-			case 'f': //TODO: this is limiting to EU868
-				newConf.frequency = (long)readSerialD(); // TODO: 10 vs 100kHz
-				if (newConf.frequency < 8630 || newConf.frequency > 8700 ){
-					debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
-					newConf.frequency = 8683; // set to default
-				}
-				break;
+		if (intp){
+			if (newConf.mode == 1){
+				switch (A){
+				case 'f': //TODO: this is limiting to EU868
+					newConf.frequency = (long)readSerialD(); // TODO: 10 vs 100kHz
+					if (newConf.frequency < 8630 || newConf.frequency > 8700 ){
+						debugSerial.println("Invalid frequency [8630-8700] * 100 kHz");
+						newConf.frequency = 8683; // set to default
+					}
+					break;
 
-			case 'b': // read bandwidth
-				newConf.bandWidth = (uint8_t)readSerialD();
-				if (!(newConf.bandWidth == 250 ||
-						newConf.bandWidth == 125 ||
-						newConf.bandWidth == 62 ||
-						newConf.bandWidth == 41 ||
-						newConf.bandWidth == 31 ||
-						newConf.bandWidth == 20 ||
-						newConf.bandWidth == 15 ||
-						newConf.bandWidth == 10 )){
-					debugSerial.println("Invalid bandwidth [ 250 | 125 | 62 | 41 | 31 | 20 | 15 | 10 ]");
-					newConf.bandWidth = 250; // set to default
-				}
-				break;
+				case 'b': // read bandwidth
+					newConf.bandWidth = (uint8_t)readSerialD();
+					if (!(newConf.bandWidth == 250 ||
+							newConf.bandWidth == 125 ||
+							newConf.bandWidth == 62 ||
+							newConf.bandWidth == 41 ||
+							newConf.bandWidth == 31 ||
+							newConf.bandWidth == 20 ||
+							newConf.bandWidth == 15 ||
+							newConf.bandWidth == 10 )){
+						debugSerial.println("Invalid bandwidth [ 250 | 125 | 62 | 41 | 31 | 20 | 15 | 10 ]");
+						newConf.bandWidth = 250; // set to default
+					}
+					break;
 
-			case 'c': // read code rate
-				newConf.codeRate = (uint8_t)readSerialD();
-				if (newConf.codeRate < 5 || newConf.codeRate > 8){
-					debugSerial.println("Invalid code rate 4/[5-8]");
-					newConf.codeRate = 8; // set to default
-				}
-				break;
+				case 'c': // read code rate
+					newConf.codeRate = (uint8_t)readSerialD();
+					if (newConf.codeRate < 5 || newConf.codeRate > 8){
+						debugSerial.println("Invalid code rate 4/[5-8]");
+						newConf.codeRate = 8; // set to default
+					}
+					break;
 
-			case 's': // read spread factor
-				newConf.spreadFactor = (uint8_t)readSerialD();
-				if (newConf.spreadFactor < 7 || newConf.spreadFactor > 12){
-					debugSerial.println("Invalid spread factor [7-12]");
-					newConf.spreadFactor = 12; // set to default
+				case 's': // read spread factor
+					newConf.spreadFactor = (uint8_t)readSerialD();
+					if (newConf.spreadFactor < 7 || newConf.spreadFactor > 12){
+						debugSerial.println("Invalid spread factor [7-12]");
+						newConf.spreadFactor = 12; // set to default
+					}
+					break;
+				default:
+					debugSerial.print("Unknown command ");
+					debugSerial.println(A);
 				}
-				break;
-			default:
-				debugSerial.print("Unknown command ");
-				debugSerial.println(A);
 			}
+			else if (newConf.mode >= 2){
+				switch (A){
 
-		if (intp && newConf.mode >= 2)
-			switch (A){
+				case 'c': // set to confirmed
+					newConf.confMsk &= ~CM_UCNF;
+					break;
+				case 'u': // set to unconfirmed
+					newConf.confMsk |= CM_UCNF;
+					break;
 
-			case 'c': // set to confirmed
-				newConf.confMsk &= ~CM_UCNF;
-				break;
-			case 'u': // set to unconfirmed
-				newConf.confMsk |= CM_UCNF;
-				break;
+				case 'o': // set to otaa
+					newConf.confMsk |= CM_OTAA;
+					resetKeyBuffer();
+					break;
+				case 'a': // set to ABP
+					newConf.confMsk &= ~CM_OTAA;
+					resetKeyBuffer();
+					break;
 
-			case 'o': // set to otaa
-				newConf.confMsk |= CM_OTAA;
-				resetKeyBuffer();
-				break;
-			case 'a': // set to ABP
-				newConf.confMsk &= ~CM_OTAA;
-				resetKeyBuffer();
-				break;
+				case 'N': // Network session key for ABP
+					readSerialS(newConf.nwkSKey, KEYSIZE);
+					if (strlen(newConf.nwkSKey) < KEYSIZE){
+						debugSerial.println("Invalid network session key");
+						newConf.nwkSKey[0] = '\0';
+					}
+					break;
 
-			case 'N': // Network session key for ABP
-				readSerialS(newConf.nwkSKey, KEYSIZE);
-				if (strlen(newConf.nwkSKey) < KEYSIZE){
-					debugSerial.println("Invalid network session key");
-					newConf.nwkSKey[0] = '\0';
+				case 'A': // Application session key for ABP
+					readSerialS(newConf.appSKey, KEYSIZE);
+					if (strlen(newConf.appSKey) < KEYSIZE){
+						debugSerial.println("Invalid application session key");
+						newConf.appSKey[0] = '\0';
+					}
+					break;
+
+				case 'D': // Device address for ABP
+					readSerialS(newConf.devAddr, KEYSIZE/4);
+					if (strlen(newConf.devAddr) < KEYSIZE/4){
+						debugSerial.println("Invalid device address key");
+						newConf.devAddr[0] = '\0';
+					}
+					break;
+
+				case 'K': // Application Key for OTAA
+					readSerialS(newConf.appKey, KEYSIZE);
+					if (strlen(newConf.appKey) < KEYSIZE){
+						debugSerial.println("Invalid application key");
+						newConf.appKey[0] = '\0';
+					}
+					break;
+
+				case 'E': // EUI address for OTAA
+					readSerialS(newConf.appEui, KEYSIZE/2);
+					if (strlen(newConf.appEui) < KEYSIZE/2){
+						debugSerial.println("Invalid EUI address");
+						newConf.appEui[0] = '\0';
+					}
+					break;
+
+				case 'C':
+					newConf.chnMsk = readSerialH();
+					if (newConf.chnMsk < 0x01 || newConf.chnMsk > 0xFF ){ //TODO: this is limiting to EU868
+						debugSerial.println("Invalid channel mask [0x01-0xFFh]");
+						newConf.chnMsk = 0xFF; // set to default
+					}
+					break;
+
+				case 'd': // read data rate
+					newConf.dataRate = (uint8_t)readSerialD();
+					if (newConf.dataRate > 5 && newConf.dataRate != 255){ // we exclude 6 and 7 for now
+						debugSerial.println("Invalid data rate [0-5]");
+						newConf.dataRate = 5; // set to default
+					}
+					break;
+
+				case 'x': // read window delay RX1 / RX2 (HC)
+					newConf.rxWindow1 = readSerialD();
+					if (newConf.rxWindow1 < 1000 || newConf.rxWindow1 > 15000){ // test range, min 1 sec .. defaults
+						debugSerial.println("Invalid RX delay [1000-15000ms]");
+						newConf.rxWindow1 = 1000; // set to default
+					}
+					newConf.rxWindow2 = newConf.rxWindow1 + 1000; // set to default offset (hc in fw)
+					break;
+
+				default:
+					debugSerial.print("Unknown command ");
+					debugSerial.println(A);
 				}
-				break;
-
-			case 'A': // Application session key for ABP
-				readSerialS(newConf.appSKey, KEYSIZE);
-				if (strlen(newConf.appSKey) < KEYSIZE){
-					debugSerial.println("Invalid application session key");
-					newConf.appSKey[0] = '\0';
-				}
-				break;
-
-			case 'D': // Device address for ABP
-				readSerialS(newConf.devAddr, KEYSIZE/4);
-				if (strlen(newConf.devAddr) < KEYSIZE/4){
-					debugSerial.println("Invalid device address key");
-					newConf.devAddr[0] = '\0';
-				}
-				break;
-
-			case 'K': // Application Key for OTAA
-				readSerialS(newConf.appKey, KEYSIZE);
-				if (strlen(newConf.appKey) < KEYSIZE){
-					debugSerial.println("Invalid application key");
-					newConf.appKey[0] = '\0';
-				}
-				break;
-
-			case 'E': // EUI address for OTAA
-				readSerialS(newConf.appEui, KEYSIZE/2);
-				if (strlen(newConf.appEui) < KEYSIZE/2){
-					debugSerial.println("Invalid EUI address");
-					newConf.appEui[0] = '\0';
-				}
-				break;
-
-			case 'C':
-				newConf.chnMsk = readSerialH();
-				if (newConf.chnMsk < 0x01 || newConf.chnMsk > 0xFF ){ //TODO: this is limiting to EU868
-					debugSerial.println("Invalid channel mask [0x01-0xFFh]");
-					newConf.chnMsk = 0xFF; // set to default
-				}
-				break;
-
-			case 'd': // read data rate
-				newConf.dataRate = (uint8_t)readSerialD();
-				if (newConf.dataRate > 5 && newConf.dataRate != 255){ // we exclude 6 and 7 for now
-					debugSerial.println("Invalid data rate [0-5]");
-					newConf.dataRate = 5; // set to default
-				}
-				break;
-			default:
-				debugSerial.print("Unknown command ");
-				debugSerial.println(A);
 			}
+		}
 	}
 
 }

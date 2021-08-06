@@ -30,6 +30,8 @@ typedef struct
 	uint8_t txPowerTst = 0;		// txPower setting for the low power test
 	uint8_t dataLen = 1;		// data length to send over LoRa for a test
 	uint8_t repeatSend = 5;		// number of send repeats
+	uint16_t rxWindow1 = 1000;  // pause duration in ms between tx and rx, default 1 sec
+	uint16_t rxWindow2 = 2000;  // pause duration in ms between tx and rx2 default 2 sec
 	union { // 16Bit
 		uint16_t frequency;		// LoRa / FSK frequency in 100KHz steps
 		uint16_t chnMsk;		// ChannelMask for LoRaWan EU868 (1-16)
