@@ -1105,7 +1105,8 @@ private:
     int length = 0;
     int a = -1;
     unsigned long startMillis = millis();
-    do {
+redo:
+	do {
       YIELD();
       while (stream.available() > 0) {
         a = stream.peek();
@@ -1182,7 +1183,17 @@ private:
       }
     } while (millis() - startMillis < timeout);
 finish:
-	if (a != -1 && a != '+') // no follow-up command, get terminator from buffer
+	if (a < 0){ // == Lockup Timeout
+        DBG("### Timeout..", data);
+		sendAT(GF(""));
+		YIELD();
+		if (a == -1 && stream.available()){
+			a--;	// attempt 2
+			startMillis = millis();
+			goto redo;
+		}
+	}
+	else if (a != '+') // no follow-up command, get terminator from buffer
 		(void)stream.read();
 
     if (index == -1) {
