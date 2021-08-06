@@ -35,8 +35,6 @@ static uint32_t startSleepTS;	// relative MC time of Sleep begin
 static uint32_t timerMillisTS;	// relative MC time for timers
 static uint32_t startTestTS;	// relative MC time for test start
 static uint32_t sleepMillis;	// Time to remain in sleep
-static uint32_t rxWindow1 = 1000; // pause duration in ms between tx and rx TODO: get parameter
-static uint32_t rxWindow2 = 1000; // pause duration in ms between rx1 and rx2 TODO: get parameter
 
 static const sLoRaConfiguration_t * conf;	// Pointer to configuration entry
 static sLoRaResutls_t * trn;				// Pointer to actual entry
@@ -186,7 +184,7 @@ onAfterTx(){
 static void
 onAfterRx(){
 	trn->timeToRx = millis() - timerMillisTS;
-	trn->timeRx = trn->timeToRx - trn->timeTx - rxWindow1;
+	trn->timeRx = trn->timeToRx - trn->timeTx - conf->rxWindow1;
 }
 
 /*
@@ -340,6 +338,8 @@ setupLoRaWan(const sLoRaConfiguration_t * newConf){
 
 	if (!(newConf->confMsk & CM_OTAA)){
 		// set to LorIoT standard RX, DR
+//		ret |= !modem.setRx1Delay(newConf->rxWindow1);	-- Not implemented, Not used (Library)
+//		ret |= !modem.setRx2Delay(newConf->rxWindow2);
 		ret |= !modem.setRX2Freq(869525000);
 		ret |= !modem.setRX2DR(0);
 	}
@@ -744,13 +744,13 @@ LoRaMgmtMain (){
 	case iPoll:
 		startSleepTS = millis();
 		trn->txDR = modem.getDataRate();
-		sleepMillis = rxWindow1 + rxWindow2 + computeAirTime(conf->dataLen, trn->txDR) + 1000; // e.g. ACK lost, = 2+-1s (random)
+		sleepMillis = conf->rxWindow2 + computeAirTime(conf->dataLen, trn->txDR) + 1000; // e.g. ACK lost, = 2+-1s (random)
 		internalState = iSleep;
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		sleepMillis = rxWindow1-50; // Wait for 1 sec slot (steps of RX/TX transitions; -50 ms for shift
-									// avoids serial contemporaneous RX-radio RX conflict on modem firmware
+		sleepMillis = 1000;	// Wait for ~1 sec slot (steps of RX/TX transitions;
+														// +x ms shift is to avoid serial contemporaneous RX-radio RX conflict on modem firmware
 		internalState = iSleep;
 		break;
 	case iChnWait:
