@@ -749,7 +749,8 @@ LoRaMgmtMain (){
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		sleepMillis = rxWindow1; // Min send time
+		sleepMillis = rxWindow1-50; // Wait for 1 sec slot (steps of RX/TX transitions; -50 ms for shift
+									// avoids serial contemporaneous RX-radio RX conflict on modem firmware
 		internalState = iSleep;
 		break;
 	case iChnWait:
