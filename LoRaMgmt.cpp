@@ -434,9 +434,11 @@ LoRaMgmtSend(){
 	if (internalState == iIdle){
 		internalState = iSend;
 
-		fcu = modem.getFCU();
-		if (fcu < 0)
-			return 0;
+		if (conf->repeatSend != 0){
+			fcu = modem.getFCU();
+			if (fcu < 0)
+				return 0;
+		}
 		onBeforeTx();
 		modem.beginPacket();
 		modem.write(genbuf, conf->dataLen);
