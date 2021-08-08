@@ -44,6 +44,7 @@ static enum {	iIdle,
 				iRetry,
 				iBusy,
 				iChnWait,
+				iRndWait,
 				iSleep,
 			} internalState;
 
@@ -597,6 +598,8 @@ LoRaMgmtSetup(const sLoRaConfiguration_t * newConf,
 			ret |= setChannels(newConf->chnMsk, newConf->dataRate);
 			ret |= setupPacket(newConf);
 			setActiveBands(newConf->chnMsk);
+			if (newConf->repeatSend == 0)
+				internalState = iRndWait;
 	}
 	ret |= setTxPwr(newConf->mode, newConf->txPowerTst);
 
@@ -751,8 +754,8 @@ LoRaMgmtMain (){
 		break;
 	case iBusy:	// Duty cycle = 1% chn [1-3], 0.1% chn [4-8]  pause = T/dc - T
 		startSleepTS = millis();
-		sleepMillis = conf->rxWindow1;	// Wait for ~1 sec slot, default, configurable over RX1 delay
-										// TODO: for now used only as delay, not setting the actual value
+		sleepMillis = conf->rxWindow1 - trn->timeTx;	// Wait for ~1 sec slot, default, configurable over RX1 delay
+														// TODO: for now used only as delay, not setting the actual value
 		internalState = iSleep;
 		break;
 	case iChnWait:
@@ -762,6 +765,12 @@ LoRaMgmtMain (){
 			uint32_t timeAir = computeAirTime(conf->dataLen, trn->txDR);
 			sleepMillis =  timeAir * 100 - timeAir; // This is for Channel 1-3, others * 1000
 		}
+		internalState = iSleep;
+		break;
+	case iRndWait:
+		startSleepTS = millis();
+		rnd_contex = startSleepTS % INT16_MAX;
+		sleepMillis = rand_r(&rnd_contex) % conf->rxWindow1;
 		internalState = iSleep;
 		break;
 	case iSleep:
