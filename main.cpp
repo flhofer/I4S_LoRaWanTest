@@ -309,6 +309,7 @@ runTest(){
 		if (newConf.start){
 			if ((ret = newConf.start()) < 0){
 				failed = 1;
+				retries++;
 				tstate = rStop;
 				debugSerial.print(prtSttErrExec);
 				debugSerial.print(prtSttStop);
