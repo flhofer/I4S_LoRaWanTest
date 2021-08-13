@@ -500,6 +500,7 @@ void readInput() {
 				newConf.bandWidth = 250;
 				newConf.codeRate = 8;
 				newConf.spreadFactor = 12;
+				newConf.preamble = 8;
 				break;
 			case 2 :  // LoRaWan
 				newConf.prep = NULL;
@@ -625,6 +626,15 @@ void readInput() {
 						debugSerial.println("Invalid spread factor [7-12]");
 						newConf.spreadFactor = 12; // set to default
 					}
+					break;
+
+				case 'i': // read initial preamble length
+					newConf.preamble = readSerialD(); // cut down to int16
+//					TODO: update to use negative
+//					if (newConf.preamble < 0 ){
+//						debugSerial.println("Invalid preamble length [0-32767]");
+//						newConf.preamble = 8; // set to default
+//					}
 					break;
 
 				case 'P': // Set to private network preamble

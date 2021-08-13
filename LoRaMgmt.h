@@ -58,6 +58,7 @@ typedef struct
 		char * nwkSKey;         // Nw Session key ABP
 	};
 	union { // 32Bit
+		int32_t preamble;		// preamble length
 		char * appKey = NULL;   // App KEY OTAA
 		char * appSKey;         // App Session key ABP
 	};
