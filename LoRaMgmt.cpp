@@ -15,7 +15,7 @@
 LoRaModem modem(loraSerial);	// @suppress("Abstract class cannot be instantiated")
 
 #define freqPlan EU868
-#define POLL_NO		5			// How many times to poll
+#define POLL_NO		0			// How many times to poll
 #define MAXLORALEN	242			// maximum payload length 0-51 for DR0-2, 115 for DR3, 242 otherwise
 #define LORACHNMAX	16
 #define LORABUSY	-4			// error code for busy channel
@@ -463,6 +463,9 @@ LoRaMgmtSend(){
 
 		if (conf->repeatSend == 0)
 			return 0; // If set to infinite, repeat send command until end
+
+		if (POLL_NO == 0 && (conf->confMsk & CM_UCNF))
+			return 2;
 		return 1;
 	}
 	return 0;	// else busy
@@ -769,7 +772,7 @@ LoRaMgmtMain (){
 		break;
 	case iRndWait:
 		startSleepTS = millis();
-		rnd_contex = startSleepTS % INT16_MAX;
+		rnd_contex = startSleepTS % UINT16_MAX;
 		sleepMillis = rand_r(&rnd_contex) % conf->rxWindow1;
 		internalState = iSleep;
 		break;
