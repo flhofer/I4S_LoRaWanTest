@@ -18,6 +18,11 @@
 #define CM_UCNF			8		// LORAWAN use unconfirmed messages
 #define CM_NPBLK		16		// LORAWAN use not public network
 
+#define CM_IQINV		1		// LORA use inverted q signal
+#define CM_CRC			2		// LORA use CRC
+#define CM_EXHDR		4		// LORA use explicit header
+#define CM_SIMLWN		8		// LORA simulate LoRaWan preamble
+
 /**
   * LoRa(Wan) Configuration
   */

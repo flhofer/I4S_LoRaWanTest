@@ -372,13 +372,20 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 	LoRa.setCodingRate4(newConf->codeRate);
 
 	// Simulate preamble of LoRaWan?
-	if (newConf->dataLen == 0){
+	if (newConf->confMsk & CM_SIMLWN){
 		// Set all default settings for LoRaWan
 		LoRa.setPreambleLength(8); // -- default
 		LoRa.setSyncWord(0x34);
-		LoRa.disableInvertIQ();
-		LoRa.enableCrc();
 	}
+
+	if (newConf->confMsk & CM_IQINV)
+		LoRa.enableInvertIQ();
+	else
+		LoRa.disableInvertIQ();
+	if (newConf->confMsk & CM_CRC)
+		LoRa.enableCrc();
+	else
+		LoRa.disableCrc();
 
 	return 0;
 }
@@ -414,7 +421,7 @@ int
 LoRaMgmtSendDumb(){
 	if (internalState != iSleep){	// Does never wait!
 		trn->txCount++;
-		while (LoRa.beginPacket(conf->dataLen == 0) == 0) {	// Use implicit header if preamblesim
+		while (LoRa.beginPacket(conf->confMsk & CM_EXHDR) == 0) {
 		  delay(1);
 		}
 		LoRa.write(genbuf, conf->dataLen);
