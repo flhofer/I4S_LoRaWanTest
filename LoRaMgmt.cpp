@@ -26,7 +26,7 @@ LoRaModem modem(loraSerial);	// @suppress("Abstract class cannot be instantiated
 
 static uint8_t actBands = 2;	// active channels
 static int	pollcnt;			// un-conf poll retries
-static int32_t	fcu;			// frame counter
+static uint32_t	fcu;			// frame counter
 
 static unsigned rnd_contex;		// pseudo-random generator context (for reentrant)
 static byte genbuf[MAXLORALEN];	// buffer for generated message
@@ -449,8 +449,6 @@ LoRaMgmtSend(){
 
 		if (conf->repeatSend != 0){
 			fcu = modem.getFCU();
-			if (fcu < 0)
-				return 0;
 		}
 		onBeforeTx();
 		modem.beginPacket();
@@ -495,8 +493,8 @@ LoRaMgmtPoll(){
 	if (internalState == iIdle){
 		internalState = iPoll;
 
-		int32_t nfcu = modem.getFCU();
-		if (nfcu == fcu || nfcu < 0){
+		uint32_t nfcu = modem.getFCU();
+		if (nfcu == fcu || nfcu == 0){
 			// Not yet sent?
 			internalState = iRetry;
 			return 0;
