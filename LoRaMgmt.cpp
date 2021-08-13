@@ -372,10 +372,15 @@ setupDumb(const sLoRaConfiguration_t * newConf){
 	LoRa.setCodingRate4(newConf->codeRate);
 
 	// Simulate preamble of LoRaWan?
-	if (newConf->confMsk & CM_SIMLWN){
-		// Set all default settings for LoRaWan
+	if (newConf->confMsk & CM_NPBLK){
+		// Set all default settings for Private network
 		LoRa.setPreambleLength(8); // -- default
-		LoRa.setSyncWord(0x34);
+		LoRa.setSyncWord(0x12);	   // -- Private network sync word
+	}
+	else{
+		// Set all default settings for LoRaWan (Public) Network
+		LoRa.setPreambleLength(8); // -- default
+		LoRa.setSyncWord(0x34);	   // -- (LoRaWan) Public network sync word
 	}
 
 	if (newConf->confMsk & CM_IQINV)

@@ -626,6 +626,28 @@ void readInput() {
 						newConf.spreadFactor = 12; // set to default
 					}
 					break;
+
+				case 'P': // Set to private network preamble
+					newConf.confMsk |= CM_NPBLK;
+					resetKeyBuffer();
+					break;
+				case 'L': // Simulate LoRaWan
+					newConf.confMsk |= CM_EXHDR | CM_CRC;
+					resetKeyBuffer();
+					break;
+				case 'C': // Enable CRC
+					newConf.confMsk |= CM_CRC;
+					resetKeyBuffer();
+					break;
+				case 'Q': // Invert IQ
+					newConf.confMsk |= CM_IQINV;
+					resetKeyBuffer();
+					break;
+				case 'E': // Explicit header
+					newConf.confMsk |= CM_EXHDR;
+					resetKeyBuffer();
+					break;
+
 				default:
 					debugSerial.print("Unknown command ");
 					debugSerial.println(A);

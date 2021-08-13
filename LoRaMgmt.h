@@ -16,12 +16,12 @@
 #define CM_DTYCL		2		// LORAWAN enable duty cycle
 #define CM_RJN	 		4		// LORAWAN rejoin if failed
 #define CM_UCNF			8		// LORAWAN use unconfirmed messages
-#define CM_NPBLK		16		// LORAWAN use not public network
 
 #define CM_IQINV		1		// LORA use inverted q signal
 #define CM_CRC			2		// LORA use CRC
 #define CM_EXHDR		4		// LORA use explicit header
-#define CM_SIMLWN		8		// LORA simulate LoRaWan preamble
+
+#define CM_NPBLK		16		// LORAWAN  & LORA use Private network
 
 /**
   * LoRa(Wan) Configuration
