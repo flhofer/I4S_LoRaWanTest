@@ -580,6 +580,10 @@ void readInput() {
 			}
 			break;
 
+		case 'B': // Reset/Reboot after each test
+			newConf.confMsk |= CM_RSTMDM;
+			break;
+
 		case 'n': // disable debug print
 			debug = 0;
 			break;
@@ -629,33 +633,23 @@ void readInput() {
 					break;
 
 				case 'i': // read initial preamble length
-					newConf.preamble = readSerialD(); // cut down to int16
-//					TODO: update to use negative
-//					if (newConf.preamble < 0 ){
-//						debugSerial.println("Invalid preamble length [0-32767]");
-//						newConf.preamble = 8; // set to default
-//					}
+					newConf.preamble = readSerialD();
 					break;
 
 				case 'P': // Set to private network preamble
 					newConf.confMsk |= CM_NPBLK;
-					resetKeyBuffer();
 					break;
 				case 'L': // Simulate LoRaWan
 					newConf.confMsk |= CM_EXHDR | CM_CRC;
-					resetKeyBuffer();
 					break;
 				case 'C': // Enable CRC
 					newConf.confMsk |= CM_CRC;
-					resetKeyBuffer();
 					break;
 				case 'Q': // Invert IQ
 					newConf.confMsk |= CM_IQINV;
-					resetKeyBuffer();
 					break;
 				case 'E': // Explicit header
 					newConf.confMsk |= CM_EXHDR;
-					resetKeyBuffer();
 					break;
 
 				default:

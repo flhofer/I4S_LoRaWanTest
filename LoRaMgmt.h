@@ -21,7 +21,8 @@
 #define CM_CRC			2		// LORA use CRC
 #define CM_EXHDR		4		// LORA use explicit header
 
-#define CM_NPBLK		16		// LORAWAN  & LORA use Private network
+#define CM_NPBLK		16		// LORAWAN & LORA use Private network
+#define CM_RSTMDM		32		// LORAWAN $ LORA reset modem after each test
 
 /**
   * LoRa(Wan) Configuration
