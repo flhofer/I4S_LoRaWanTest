@@ -1,7 +1,4 @@
 # I4S_LoRaWanTest
-I4S* Project Code, LoRaWan Test-Node for network penetration tests
-
-# I4S_LoRaWanNode
 
 The I4S* project investigates behavioral models of large-scale LoRaWan networks used in smart contexts. This repository contains the micro-controller code for a _ARM_ Cortex M0+ micro-controller for node simulation and testing. The micro-controller performs regular transmissions in different configurations to test the performance of the network and the communication reliability. 
 
@@ -43,6 +40,8 @@ Generic Commands are
 'p' : set power index for tests accompanied by a digit number, [0..5], default 0.
 'l' : random data length to send, 0-242/255, depending on mode. Default 1.
 'r' : number of times to repeat a test, [0 to 100]. Default 5 repeats.
+'B' : reboot modem after each test
+'n' : disable debug print
 ```
 Other commands depend on the selected mode, `m`.
 
@@ -59,6 +58,12 @@ The options are the following:
 'b' : bandwith in kHz, one in [250, 125, 62, 41, 31, 20, 15, 10]. Default 250kHz.
 'c' : code rate of the transmission, denominator value between 4/[5-8]. Default 8.
 's' : spread factor to use in [7..12]. Default 12.
+'i' : set initial preamble lenght, default 8
+'P' : set to private network (internal header code)
+'L' : simulate LoRaWan, i.e., set all parameters similar to LoRaWan
+'C' : Enable payload CRC
+'Q' : Invert modulation IQ, usually off for uplink, on for downlink on LoRaWan
+'E' : Explicit header in the package.
 ```
 
 ### Mode 2: LoRaWan Transmissions
