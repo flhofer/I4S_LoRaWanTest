@@ -22,7 +22,19 @@ Sloeber supplies all core and library folders.
     
 ## Notes on versions
 
-The used Arduino core is AVR 1.8.3, and the LoRaWan module mounts an FW version 1.2.4, strictly needed to enable all features of the modem. The module's firmware can be updated via a stand-alone programming code you can find in the [official MKRWAN LoRaWan library](https://github.com/arduino-libraries/MKRWAN) sample. The used firmware might be found in the official repository (also for newer verions) or [here](https://github.com/flhofer/MKRWAN/tree/fix-hup1.2.3/examples/MKRWANFWUpdate_standalone).
+The used Arduino core is Samd 1.8.11, and the LoRaWan module mounts an FW version 1.2.4, strictly needed to enable all features of the modem. The module's firmware can be updated via a stand-alone programming code you can find in the [official MKRWAN LoRaWan library](https://github.com/arduino-libraries/MKRWAN) sample. The used firmware might be found in the official repository (also for newer verions) or [here](https://github.com/flhofer/MKRWAN/tree/fix-hup1.2.3/examples/MKRWANFWUpdate_standalone). To enable all features used in the test, use a custom compiled version of the firmware enabling all 8 Semtech standard channels (by default only 1-3 are enabled) and disabling duty cycle as follows. Edit _Projects>Multi>Applications>LoRa>AT_Slave>src>lora.c_ and change the lines (101-103).
+
+```
+/*!
+ * LoRaWAN ETSI duty cycle control enable/disable
+ *
+ * \remark Please note that ETSI mandates duty cycled transmissions. Use only for test purposes
+ */
+#define LORAWAN_DUTYCYCLE_ON                        false
+
+#define USE_SEMTECH_DEFAULT_CHANNEL_LINEUP          1
+```
+You can compile and upload the new firmware following the instructions provided in the readme of the firmware.
 
 ## Usage
 
